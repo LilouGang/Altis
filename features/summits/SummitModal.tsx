@@ -1,6 +1,6 @@
 // src/components/ui/AjoutAscensionModal.tsx
 import { X, Calendar, Clock, CloudSun, Mountain } from 'lucide-react';
-import { Sommet } from '@/types'; // On importe notre type !
+import { Sommet } from './summitTypes'; // On importe notre type !
 
 interface Props {
   sommet: Sommet;
@@ -21,7 +21,7 @@ export default function AjoutAscensionModal({ sommet, onClose }: Props) {
           </button>
           <span className="text-emerald-400 font-bold text-xs uppercase tracking-widest mb-1 block">Nouvelle ascension</span>
           <h3 className="text-2xl font-black">{sommet.nom}</h3>
-          <p className="text-slate-400 text-sm mt-1">{sommet.altitude}m • {sommet.massif}</p>
+          <p className="text-slate-400 text-sm mt-1">{sommet.altitude}m • {sommet.massif_principal}</p>
         </div>
 
         {/* Le Formulaire */}
