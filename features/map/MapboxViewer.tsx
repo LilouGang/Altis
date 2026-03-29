@@ -1,17 +1,37 @@
-// src/features/map/MapboxViewer.tsx
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Map, { Source, Marker, Popup } from 'react-map-gl/mapbox'; 
 import 'mapbox-gl/dist/mapbox-gl.css';
 import Link from 'next/link';
-import { sommetsDb } from '@/shared/lib/data'; 
-import { ArrowUpDown, Compass, Minus, MousePointerClick, Plus } from 'lucide-react';
+import { Plus, Minus, Compass, Mountain, Flag, TrendingUp, MountainSnow, MousePointerClick } from 'lucide-react'; // Ajout des nouveaux icônes
+
+// IMPORTS FIREBASE
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/shared/lib/firebase';
+import { Sommet } from '../summits/summitTypes';
 
 export default function MapboxViewer() {
   const [viewState, setViewState] = useState({ longitude: 6.8694, latitude: 45.4, zoom: 8, pitch: 45, bearing: 0 });
-  const [popupInfo, setPopupInfo] = useState<any>(null);
+  const [popupInfo, setPopupInfo] = useState<Sommet | null>(null); // Type précisé
+  
+  const [sommets, setSommets] = useState<Sommet[]>([]);
 
-  // 2. Ajoute ces fonctions de contrôle
+  useEffect(() => {
+    async function fetchSommets() {
+      try {
+        const querySnapshot = await getDocs(collection(db, "sommets"));
+        const data = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Sommet[];
+        setSommets(data);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des sommets:", error);
+      }
+    }
+    fetchSommets();
+  }, []);
+
   const handleZoomIn = () => setViewState(prev => ({ ...prev, zoom: prev.zoom + 1 }));
   const handleZoomOut = () => setViewState(prev => ({ ...prev, zoom: prev.zoom - 1 }));
   const handleResetNorth = () => setViewState(prev => ({ ...prev, bearing: 0 }));
@@ -22,63 +42,101 @@ export default function MapboxViewer() {
       <Map
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
-        mapStyle="mapbox://styles/mapbox/outdoors-v12" // On pourra passer sur un style satellite 3D plus tard
+        mapStyle="mapbox://styles/mapbox/outdoors-v12"
         mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
         terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
       >
         <Source id="mapbox-dem" type="raster-dem" url="mapbox://mapbox.mapbox-terrain-dem-v1" tileSize={512} maxzoom={14} />
 
         {/* MARQUEURS */}
-        {sommetsDb.map((sommet) => (
-          <Marker key={sommet.id} longitude={sommet.lng} latitude={sommet.lat} anchor="bottom">
+        {sommets.map((sommet) => (
+          <Marker key={sommet.id} longitude={sommet.coordonnees.longitude} latitude={sommet.coordonnees.latitude} anchor="bottom">
             <div 
               onClick={(e) => {
                 e.stopPropagation();
                 setPopupInfo(sommet);
               }} 
-              // Style ultra-clean pour les points
-              className={`cursor-pointer relative z-10 h-5 w-5 rounded-full border-2 shadow-lg hover:scale-125 transition-transform ${sommet.fait ? 'bg-emerald-500 border-white' : 'bg-white/80 backdrop-blur-sm border-neutral-300'}`}
+              className={`cursor-pointer relative z-10 h-5 w-5 rounded-full border-2 shadow-lg hover:scale-125 transition-transform bg-white border-neutral-300`}
             />
           </Marker>
         ))}
 
-        {/* POPUP ULTRA-DESIGN AMÉLIORÉ */}
+        {/* --- LE NOUVEAU POPUP "FICHE TECHNIQUE" --- */}
         {popupInfo && (
-        <Popup longitude={popupInfo.lng} latitude={popupInfo.lat} anchor="bottom" offset={24} closeButton={false} onClose={() => setPopupInfo(null)} className="z-20">
-            <div className="w-64 flex flex-col p-2 bg-white/90 backdrop-blur-xl rounded-[1.25rem] shadow-2xl border border-white/50">
+          <Popup 
+            longitude={popupInfo.coordonnees.longitude} 
+            latitude={popupInfo.coordonnees.latitude} 
+            anchor="bottom" 
+            offset={[-50, -15]} 
             
-            {/* Image avec dégradé intégré pour l'immersion */}
-            <div 
-                className="h-32 w-full rounded-2xl mb-3 relative overflow-hidden group flex items-end p-3" 
-                style={{ backgroundImage: `url(${popupInfo.image})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+            closeButton={false} 
+            onClose={() => setPopupInfo(null)} 
+            className="altis-popup z-20"
+          >
+            {/* Le cadre principal cliquable */}
+            <Link 
+              href={`/sommets/${popupInfo.id}`} 
+              // On le met en 'relative' pour positionner l'icône de souris en absolu
+              className="block w-[340px] p-2.5 bg-white rounded-2xl shadow-xl border border-neutral-200 hover:border-emerald-500 transition-colors group cursor-pointer relative"
             >
-                {/* Voile sombre pour la lisibilité */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                
-                {/* Tag Massif en haut à gauche */}
-                <div className="absolute top-2 left-2 bg-white/20 backdrop-blur-md border border-white/30 px-2 py-1 rounded-md">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-white block leading-none drop-shadow-sm">{popupInfo.massif}</span>
-                </div>
+              
+              {/* NOUVEAU : Petit icône de clic discret en haut à droite */}
+              <div className="absolute top-2.5 right-2.5 text-neutral-400 group-hover:text-emerald-500 transition-colors">
+                <MousePointerClick size={14} />
+              </div>
 
-                {/* Info superposée sur l'image */}
-                <div className="relative z-10 w-full">
-                    <h3 className="font-bold text-white text-lg leading-tight truncate drop-shadow-md">{popupInfo.nom}</h3>
-                    <p className="text-xs font-medium text-neutral-200">{popupInfo.altitude}m • Diff. {popupInfo.difficulte}</p>
+              <div className="flex gap-3 items-center">
+                
+                {/* Petite photo à gauche (Image BD) */}
+                <div 
+                  className="w-14 h-14 rounded-xl bg-neutral-100 flex-shrink-0" 
+                  style={{ backgroundImage: `url(${popupInfo.image_couverture_url || 'https://images.unsplash.com/photo-1549880338-65dd4bc8a202?q=80&w=200'})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                />
+                
+                {/* Contenu à droite */}
+                <div className="flex flex-col flex-grow overflow-hidden pr-3">
+                  
+                  {/* Titre (Légèrement plus petit pour l'icône) */}
+                  <h3 className="font-bold text-neutral-900 text-sm leading-tight mb-1.5 truncate group-hover:text-emerald-600 transition-colors">
+                    {popupInfo.nom}
+                  </h3>
+                  
+                  {/* Les 4 valeurs en ligne, avec ABRÉVIATIONS */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="flex flex-col">
+                      {/* NOUVEAU LABEL : Alti. */}
+                      <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">Alti.</span>
+                      <span className="text-xs font-semibold text-neutral-800">{popupInfo.altitude}m</span>
+                    </div>
+                    
+                    <div className="flex flex-col">
+                      {/* NOUVEAU LABEL : Proé. */}
+                      <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">Proé.</span>
+                      <span className="text-xs font-semibold text-neutral-800">{popupInfo.prominence ? `${popupInfo.prominence}m` : '-'}</span>
+                    </div>
+                    
+                    <div className="flex flex-col overflow-hidden">
+                      {/* NOUVEAU LABEL : Massif */}
+                      <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">Massif</span>
+                      <span className="text-xs font-semibold text-neutral-800 truncate w-full" title={popupInfo.massif_principal}>{popupInfo.massif_principal}</span>
+                    </div>
+                    
+                    <div className="flex flex-col overflow-hidden">
+                      {/* NOUVEAU LABEL : Pays */}
+                      <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">Pays</span>
+                      {/* On n'affiche que le premier pays pour la compacité */}
+                      <span className="text-xs font-semibold text-neutral-800 truncate w-full" title={popupInfo.pays.join(', ')}>{popupInfo.pays[0]}</span>
+                    </div>
+                  </div>
+
                 </div>
-            </div>
-            
-            {/* Bouton d'action */}
-            <div className="px-1 pb-1">
-                <Link href={`/sommets/${popupInfo.id}`} className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl transition-all flex justify-center items-center shadow-md hover:shadow-lg shadow-emerald-500/20">
-                Explorer ce sommet
-                </Link>
-            </div>
-            </div>
-        </Popup>
+              </div>
+            </Link>
+          </Popup>
         )}
 
-        <div className="absolute bottom-48 right-4 flex flex-col gap-3 z-30">
-          {/* Groupe Zoom */}
+        {/* BOUTONS DE CONTRÔLE DE CAMÉRA */}
+        <div className="absolute bottom-60 right-4 flex flex-col gap-3 z-30">
           <div className="flex flex-col bg-white rounded-xl shadow-md border border-neutral-200 overflow-hidden">
             <button onClick={handleZoomIn} className="p-2.5 hover:bg-neutral-100 border-b border-neutral-200 text-neutral-600 transition-colors">
               <Plus size={18} strokeWidth={2.5} />
@@ -87,11 +145,8 @@ export default function MapboxViewer() {
               <Minus size={18} strokeWidth={2.5} />
             </button>
           </div>
-
-          {/* Groupe Boussole / 3D */}
           <div className="flex flex-col bg-white rounded-xl shadow-md border border-neutral-200 overflow-hidden">
             <button onClick={handleResetNorth} className="p-2.5 hover:bg-neutral-100 border-b border-neutral-200 text-neutral-600 transition-colors flex justify-center items-center" title="Remettre au Nord">
-              {/* Petite astuce visuelle : la boussole tourne en fonction de l'angle de la carte ! */}
               <Compass size={18} strokeWidth={2.5} style={{ transform: `rotate(${-viewState.bearing || 0}deg)`, transition: 'transform 0.3s ease' }} />
             </button>
             <button onClick={handleToggle3D} className="p-2.5 hover:bg-neutral-100 text-neutral-700 font-black text-[10px] tracking-wider transition-colors h-[38px] flex justify-center items-center" title="Basculer 2D/3D">

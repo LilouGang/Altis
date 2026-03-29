@@ -11,15 +11,9 @@ export default function FloatingSearch() {
         
         <input 
           type="text" 
-          placeholder="Rechercher un sommet, un massif..." 
-          className="w-full bg-white/80 backdrop-blur-md backdrop-saturate-200 border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-full py-4 pl-14 pr-16 text-neutral-800 font-medium placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
+          placeholder="Rechercher..." 
+          className="w-full bg-white/55 backdrop-blur-sm backdrop-saturate-200 border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-full py-4 pl-14 pr-16 text-neutral-800 font-medium placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
         />
-        
-        <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-          <div className="flex items-center gap-1 px-2 py-1 bg-white/50 backdrop-blur-md rounded-lg border border-white/40 text-neutral-500 text-xs font-bold shadow-sm">
-            <Command size={12} /> K
-          </div>
-        </div>
       </div>
     </div>
   );
