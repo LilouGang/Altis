@@ -8,7 +8,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="h-screen w-screen overflow-hidden bg-neutral-900 antialiased">
         <Header />
         {/* Le contenu de la page (la carte, le dashboard, etc.) s'affichera ici */}
-        <main className="h-full w-full">
+        <main className="h-full w-full overflow-y-auto">
           {children}
         </main>
       </body>

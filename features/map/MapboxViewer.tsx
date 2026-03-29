@@ -4,6 +4,8 @@ import Map, { Source, Marker, Popup } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import Link from 'next/link';
 import { Plus, Minus, Compass, Mountain, Flag, TrendingUp, MountainSnow, MousePointerClick } from 'lucide-react'; // Ajout des nouveaux icônes
+import { getUserAscensions } from '../user/userService';
+import { Ascension } from '../user/userTypes';
 
 // IMPORTS FIREBASE
 import { collection, getDocs } from 'firebase/firestore';
@@ -15,21 +17,30 @@ export default function MapboxViewer() {
   const [popupInfo, setPopupInfo] = useState<Sommet | null>(null); // Type précisé
   
   const [sommets, setSommets] = useState<Sommet[]>([]);
+  const [userAscensions, setUserAscensions] = useState<Record<string, Ascension>>({});
 
   useEffect(() => {
-    async function fetchSommets() {
+    async function fetchData() {
       try {
-        const querySnapshot = await getDocs(collection(db, "sommets"));
-        const data = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Sommet[];
+        // On récupère les sommets ET le carnet de l'utilisateur en même temps
+        const [querySnapshot, ascensionsData] = await Promise.all([
+          getDocs(collection(db, "sommets")),
+          getUserAscensions("user_test_123") // ID Temporaire
+        ]);
+        
+        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Sommet[];
         setSommets(data);
+
+        // On transforme le tableau d'ascensions en objet pour le lire plus vite { "id_mont_blanc": ascension, ... }
+        const ascMap: Record<string, Ascension> = {};
+        ascensionsData.forEach(asc => { ascMap[asc.summitId] = asc; });
+        setUserAscensions(ascMap);
+
       } catch (error) {
-        console.error("Erreur lors de la récupération des sommets:", error);
+        console.error("Erreur:", error);
       }
     }
-    fetchSommets();
+    fetchData();
   }, []);
 
   const handleZoomIn = () => setViewState(prev => ({ ...prev, zoom: prev.zoom + 1 }));
@@ -49,17 +60,30 @@ export default function MapboxViewer() {
         <Source id="mapbox-dem" type="raster-dem" url="mapbox://mapbox.mapbox-terrain-dem-v1" tileSize={512} maxzoom={14} />
 
         {/* MARQUEURS */}
-        {sommets.map((sommet) => (
-          <Marker key={sommet.id} longitude={sommet.coordonnees.longitude} latitude={sommet.coordonnees.latitude} anchor="bottom">
-            <div 
-              onClick={(e) => {
-                e.stopPropagation();
-                setPopupInfo(sommet);
-              }} 
-              className={`cursor-pointer relative z-10 h-5 w-5 rounded-full border-2 shadow-lg hover:scale-125 transition-transform bg-white border-neutral-300`}
-            />
-          </Marker>
-        ))}
+        {sommets.map((sommet) => {
+          // On vérifie si ce sommet est dans le carnet de l'utilisateur
+          const ascension = userAscensions[sommet.id];
+          const isDone = !!ascension;
+          
+          // Logique des couleurs :
+          // - Si fait : couleur personnalisée (qui est #10b981 Vert par défaut dans ton form)
+          // - Si pas fait : #3b82f6 (Bleu Tailwind standard)
+          const markerColor = isDone ? ascension.customColor : "#3b82f6";
+
+          return (
+            <Marker key={sommet.id} longitude={sommet.coordonnees.longitude} latitude={sommet.coordonnees.latitude} anchor="bottom">
+              <div 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPopupInfo(sommet);
+                }} 
+                // On utilise le style en ligne pour forcer la couleur dynamique
+                style={{ backgroundColor: markerColor }}
+                className={`cursor-pointer relative z-10 h-5 w-5 rounded-full border-[2.5px] border-white shadow-md hover:scale-125 transition-transform`}
+              />
+            </Marker>
+          );
+        })}
 
         {/* --- LE NOUVEAU POPUP "FICHE TECHNIQUE" --- */}
         {popupInfo && (
