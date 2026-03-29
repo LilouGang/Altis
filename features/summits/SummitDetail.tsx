@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { getSummitById, addAscension, getSummitAscensions, updateAscension } from "./summitService";
 import { Sommet } from "./summitTypes";
 import { Ascension } from "../user/userTypes";
 import { ArrowLeft, Flag, Star, ChevronDown, Check, Edit2, MapPin } from "lucide-react";
 import Link from "next/link";
+import { getSummitById, addAscension, getSummitAscensions, updateAscension, saveMarkerColor, getMarkerColor } from "./summitService";
 
 // Nos belles couleurs prédéfinies (Tailwind colors)
 const TRACE_COLORS = [
@@ -29,7 +29,7 @@ export default function SummitDetail({ summitId }: { summitId: string }) {
   const [myAscensionId, setMyAscensionId] = useState<string | null>(null); // Pour savoir si on doit Créer ou Mettre à jour
 
   // États du formulaire
-  const [customColor, setCustomColor] = useState(TRACE_COLORS[3]);
+  const [markerColor, setMarkerColor] = useState("#3b82f6"); // Bleu par défaut
   const [isColorPaletteOpen, setIsColorPaletteOpen] = useState(false);
   const [dateAscension, setDateAscension] = useState(new Date().toISOString().split('T')[0]);
   const [rating, setRating] = useState(0);
@@ -40,26 +40,25 @@ export default function SummitDetail({ summitId }: { summitId: string }) {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [summitData, ascensionsData] = await Promise.all([
+        const currentUserId = "user_test_123";
+        const [summitData, ascensionsData, colorData] = await Promise.all([
           getSummitById(summitId),
-          getSummitAscensions(summitId)
+          getSummitAscensions(summitId),
+          getMarkerColor(currentUserId, summitId) // On charge la couleur enregistrée
         ]);
+        
         setSommet(summitData);
         setAscensions(ascensionsData);
+        setMarkerColor(colorData); // On applique la couleur (Bleu, Vert, ou perso)
 
-        // NOUVEAU : On vérifie si l'utilisateur a DÉJÀ fait ce sommet
-        const currentUserId = "user_test_123"; // À remplacer par auth.currentUser.uid plus tard
         const existingAscension = ascensionsData.find(a => a.userId === currentUserId);
-        
         if (existingAscension) {
           setActionState('done');
           setMyAscensionId(existingAscension.id);
-          setCustomColor(existingAscension.customColor);
           setDateAscension(existingAscension.dateAscension);
           setRating(existingAscension.rating);
           setComment(existingAscension.comment);
         }
-
       } catch (error) {
         console.error(error);
       } finally {
@@ -68,6 +67,55 @@ export default function SummitDetail({ summitId }: { summitId: string }) {
     }
     fetchData();
   }, [summitId]);
+
+  // LA FONCTION DE CHANGEMENT MANUEL DE COULEUR
+  const handleColorChange = async (color: string) => {
+    setMarkerColor(color);
+    setIsColorPaletteOpen(false);
+    await saveMarkerColor("user_test_123", summitId, color);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sommet || rating === 0) return alert("Veuillez donner une note.");
+    setIsSubmitting(true);
+
+    try {
+      // 1. Logique de couleur automatique : si c'est encore bleu, on passe en vert !
+      let finalColor = markerColor;
+      if (markerColor === "#3b82f6") {
+        finalColor = "#10b981"; // Vert émeraude
+        setMarkerColor(finalColor);
+        await saveMarkerColor("user_test_123", summitId, finalColor);
+      }
+
+      // 2. On enregistre l'ascension SANS la couleur
+      const ascensionData = {
+        userId: "user_test_123",
+        summitId: summitId,
+        summitName: sommet.nom,
+        altitude: sommet.altitude,
+        dateAscension,
+        rating,
+        comment,
+        customColor: finalColor // <-- C'EST LA LIGNE QU'IL MANQUAIT
+      };
+
+      if (myAscensionId) {
+        await updateAscension(myAscensionId, ascensionData);
+        setAscensions(prev => prev.map(a => a.id === myAscensionId ? { id: myAscensionId, ...ascensionData } : a));
+      } else {
+        const newId = await addAscension(ascensionData);
+        setMyAscensionId(newId);
+        setAscensions([{ id: newId, ...ascensionData }, ...ascensions]);
+      }
+      setActionState('done');
+    } catch (error) {
+      alert("Erreur lors de l'enregistrement.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const stats = useMemo(() => {
     if (ascensions.length === 0) return { total: 0, avg: 0, distribution: [0, 0, 0, 0, 0] };
@@ -86,42 +134,6 @@ export default function SummitDetail({ summitId }: { summitId: string }) {
       return b.rating - a.rating;
     });
   }, [ascensions, sortBy]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!sommet || rating === 0) return alert("Veuillez donner une note.");
-    setIsSubmitting(true);
-
-    try {
-      const ascensionData = {
-        userId: "user_test_123",
-        summitId: summitId,
-        summitName: sommet.nom,
-        altitude: sommet.altitude,
-        dateAscension,
-        rating,
-        comment,
-        customColor
-      };
-
-      if (myAscensionId) {
-        // MISE À JOUR (Édition)
-        await updateAscension(myAscensionId, ascensionData);
-        setAscensions(prev => prev.map(a => a.id === myAscensionId ? { id: myAscensionId, ...ascensionData } : a));
-      } else {
-        // CRÉATION
-        const newId = await addAscension(ascensionData);
-        setMyAscensionId(newId);
-        setAscensions([{ id: newId, ...ascensionData }, ...ascensions]);
-      }
-      
-      setActionState('done'); // On repasse en mode "Terminé"
-    } catch (error) {
-      alert("Erreur lors de l'enregistrement.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   if (loading) return <div className="p-20 text-center text-sm font-medium text-neutral-400">Chargement des données...</div>;
   if (!sommet) return <div className="p-20 text-center text-sm font-medium text-neutral-400">Sommet introuvable.</div>;
@@ -156,30 +168,26 @@ export default function SummitDetail({ summitId }: { summitId: string }) {
               <button 
                 onClick={() => setIsColorPaletteOpen(!isColorPaletteOpen)}
                 className="focus:outline-none hover:scale-110 transition-transform"
-                title="Choisir une couleur"
+                title="Changer la couleur sur la carte"
               >
-                <Flag size={24} color={customColor} fill={customColor} className="drop-shadow-sm transition-colors duration-300" />
+                <Flag size={24} color={markerColor} fill={markerColor} className="drop-shadow-sm transition-colors duration-300" />
               </button>
               
-              {/* Le menu des couleurs qui s'ouvre au clic */}
               {isColorPaletteOpen && (
                 <div className="absolute top-8 right-0 bg-white border border-neutral-100 shadow-xl rounded-2xl p-3 flex gap-2 z-20 animate-in fade-in zoom-in-95">
                   {TRACE_COLORS.map(color => (
                     <button
                       key={color}
                       type="button"
-                      onClick={() => {
-                        setCustomColor(color);
-                        setIsColorPaletteOpen(false);
-                      }}
-                      className={`w-6 h-6 rounded-full transition-all ${customColor === color ? 'ring-2 ring-offset-2 ring-neutral-800 scale-110' : 'hover:scale-110'}`}
+                      onClick={() => handleColorChange(color)} // On utilise la nouvelle fonction
+                      className={`w-6 h-6 rounded-full transition-all ${markerColor === color ? 'ring-2 ring-offset-2 ring-neutral-800 scale-110' : 'hover:scale-110'}`}
                       style={{ backgroundColor: color }}
                     />
                   ))}
                 </div>
               )}
             </div>
-          </div>
+            </div>
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-neutral-500 border-b border-neutral-100 pb-5 mb-5">
             <span>Altitude <strong className="text-neutral-900 font-bold">{sommet.altitude}m</strong></span>
@@ -228,22 +236,6 @@ export default function SummitDetail({ summitId }: { summitId: string }) {
                       <Star key={s} size={24} onClick={() => setRating(s)} onMouseEnter={() => setHoverRating(s)} onMouseLeave={() => setHoverRating(0)} className={`cursor-pointer transition-colors ${s <= (hoverRating || rating) ? "text-amber-400 fill-amber-400" : "text-neutral-200"}`} />
                     ))}
                   </div>
-                </div>
-              </div>
-
-              <div className="md:w-1/2 flex flex-col justify-center">
-                <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-3">Couleur de la trace</label>
-                <div className="flex flex-wrap gap-3">
-                  {TRACE_COLORS.map(color => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setCustomColor(color)}
-                      className={`w-8 h-8 rounded-full transition-all ${customColor === color ? 'ring-2 ring-offset-2 ring-neutral-800 scale-110' : 'hover:scale-110'}`}
-                      style={{ backgroundColor: color }}
-                      title="Choisir cette couleur"
-                    />
-                  ))}
                 </div>
               </div>
             </div>

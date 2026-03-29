@@ -6,9 +6,7 @@ import Link from 'next/link';
 import { Plus, Minus, Compass, Mountain, Flag, TrendingUp, MountainSnow, MousePointerClick } from 'lucide-react'; // Ajout des nouveaux icônes
 import { getUserAscensions } from '../user/userService';
 import { Ascension } from '../user/userTypes';
-
-// IMPORTS FIREBASE
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/shared/lib/firebase';
 import { Sommet } from '../summits/summitTypes';
 
@@ -17,24 +15,28 @@ export default function MapboxViewer() {
   const [popupInfo, setPopupInfo] = useState<Sommet | null>(null); // Type précisé
   
   const [sommets, setSommets] = useState<Sommet[]>([]);
+  const [markerColors, setMarkerColors] = useState<Record<string, string>>({});
   const [userAscensions, setUserAscensions] = useState<Record<string, Ascension>>({});
 
   useEffect(() => {
     async function fetchData() {
       try {
-        // On récupère les sommets ET le carnet de l'utilisateur en même temps
-        const [querySnapshot, ascensionsData] = await Promise.all([
+        const currentUserId = "user_test_123";
+        // On cible UNIQUEMENT la nouvelle table des marqueurs
+        const qColors = query(collection(db, "user_markers"), where("userId", "==", currentUserId));
+
+        const [sommetsSnap, colorsSnap] = await Promise.all([
           getDocs(collection(db, "sommets")),
-          getUserAscensions("user_test_123") // ID Temporaire
+          getDocs(qColors)
         ]);
         
-        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Sommet[];
-        setSommets(data);
+        setSommets(sommetsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Sommet[]);
 
-        // On transforme le tableau d'ascensions en objet pour le lire plus vite { "id_mont_blanc": ascension, ... }
-        const ascMap: Record<string, Ascension> = {};
-        ascensionsData.forEach(asc => { ascMap[asc.summitId] = asc; });
-        setUserAscensions(ascMap);
+        const colorsMap: Record<string, string> = {};
+        colorsSnap.docs.forEach(doc => {
+          colorsMap[doc.data().summitId] = doc.data().color;
+        });
+        setMarkerColors(colorsMap);
 
       } catch (error) {
         console.error("Erreur:", error);
@@ -61,14 +63,8 @@ export default function MapboxViewer() {
 
         {/* MARQUEURS */}
         {sommets.map((sommet) => {
-          // On vérifie si ce sommet est dans le carnet de l'utilisateur
-          const ascension = userAscensions[sommet.id];
-          const isDone = !!ascension;
-          
-          // Logique des couleurs :
-          // - Si fait : couleur personnalisée (qui est #10b981 Vert par défaut dans ton form)
-          // - Si pas fait : #3b82f6 (Bleu Tailwind standard)
-          const markerColor = isDone ? ascension.customColor : "#3b82f6";
+          // La couleur vient directement de la table user_markers, sinon bleu par défaut
+          const markerColor = markerColors[sommet.id] || "#3b82f6";
 
           return (
             <Marker key={sommet.id} longitude={sommet.coordonnees.longitude} latitude={sommet.coordonnees.latitude} anchor="bottom">
@@ -77,7 +73,6 @@ export default function MapboxViewer() {
                   e.stopPropagation();
                   setPopupInfo(sommet);
                 }} 
-                // On utilise le style en ligne pour forcer la couleur dynamique
                 style={{ backgroundColor: markerColor }}
                 className={`cursor-pointer relative z-10 h-5 w-5 rounded-full border-[2.5px] border-white shadow-md hover:scale-125 transition-transform`}
               />

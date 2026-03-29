@@ -5,21 +5,43 @@ import RecentAscensions from "@/features/user/RecentAscensions";
 import { UserStats, Ascension } from "@/features/user/userTypes";
 import { getUserAscensions } from "@/features/user/userService";
 
+// NOUVEAUX IMPORTS : Pour aller lire la table des drapeaux
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "@/shared/lib/firebase";
+
 export default function DashboardPage() {
   const [ascensions, setAscensions] = useState<Ascension[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // ID Temporaire en attendant le vrai système de connexion
   const currentUserId = "user_test_123";
 
   useEffect(() => {
     async function fetchDashboardData() {
       try {
-        const data = await getUserAscensions(currentUserId);
+        // 1. On interroge les ascensions ET les couleurs en parallèle
+        const qColors = query(collection(db, "user_markers"), where("userId", "==", currentUserId));
         
-        // On trie les ascensions de la plus récente à la plus ancienne
-        const sortedData = data.sort((a, b) => new Date(b.dateAscension).getTime() - new Date(a.dateAscension).getTime());
+        const [ascensionsData, colorsSnap] = await Promise.all([
+          getUserAscensions(currentUserId),
+          getDocs(qColors)
+        ]);
+
+        // 2. On crée le dictionnaire des couleurs { "id_sommet": "#couleur" }
+        const colorsMap: Record<string, string> = {};
+        colorsSnap.docs.forEach(doc => {
+          colorsMap[doc.data().summitId] = doc.data().color;
+        });
+
+        // 3. On injecte la couleur du drapeau dans les données de l'ascension
+        const ascensionsWithColors = ascensionsData.map(asc => ({
+          ...asc,
+          customColor: colorsMap[asc.summitId] || "#10b981" // Vert par défaut au cas où
+        }));
+        
+        // 4. On trie et on sauvegarde dans l'état
+        const sortedData = ascensionsWithColors.sort((a, b) => new Date(b.dateAscension).getTime() - new Date(a.dateAscension).getTime());
         setAscensions(sortedData);
+
       } catch (error) {
         console.error("Erreur de chargement du dashboard :", error);
       } finally {
@@ -29,20 +51,18 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [currentUserId]);
 
-  // Calcul dynamique des statistiques en fonction des vraies ascensions
   const stats = useMemo<UserStats>(() => {
     if (ascensions.length === 0) return { totalSummits: 0, totalAscent: 0, maxAltitude: 0 };
     
     return {
       totalSummits: ascensions.length,
       totalAscent: ascensions.reduce((acc, curr) => acc + curr.altitude, 0),
-      // Math.max permet de trouver la plus haute altitude dans le tableau
       maxAltitude: Math.max(...ascensions.map(a => a.altitude))
     };
   }, [ascensions]);
 
   if (loading) {
-    return <div className="min-h-screen bg-neutral-50 pt-24 pb-12 px-6 flex justify-center items-center font-bold text-neutral-400">Chargement de votre carnet...</div>;
+    return <div className="min-h-screen bg-neutral-50 pt-24 pb-12 px-6 flex justify-center items-center text-sm font-bold text-neutral-400">Chargement de votre carnet...</div>;
   }
 
   return (
@@ -54,7 +74,6 @@ export default function DashboardPage() {
           <p className="text-neutral-500 mt-1 font-medium">Retrouvez toutes vos statistiques et ascensions.</p>
         </div>
 
-        {/* On passe les VRAIES données calculées */}
         <DashboardStats stats={stats} />
         <RecentAscensions ascensions={ascensions} />
 
