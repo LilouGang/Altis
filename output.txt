@@ -1,0 +1,1662 @@
+===== FILE: app/(auth)/login/page.tsx =====
+"use client";
+import { useState } from "react";
+import { loginUser, registerUser } from "@/features/auth/authService";
+import { useRouter } from "next/navigation";
+import { Mountain } from "lucide-react";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        await loginUser(email, password);
+      } else {
+        await registerUser(email, password);
+      }
+      router.push("/"); // Redirection vers la carte après succès
+    } catch (err: any) {
+      setError("Erreur : Identifiants incorrects ou mot de passe trop faible.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-neutral-50 flex flex-col justify-center items-center p-6">
+      
+      <div className="w-full max-w-md bg-white rounded-[2rem] border border-neutral-200 shadow-sm p-8">
+        <div className="flex flex-col items-center mb-8">
+          <div className="bg-emerald-600 p-2.5 rounded-xl text-white shadow-sm mb-4">
+            <Mountain size={28} strokeWidth={2.5} />
+          </div>
+          <h1 className="text-2xl font-black text-neutral-900">
+            {isLogin ? "Bon retour sur Altis" : "Rejoignez l'aventure"}
+          </h1>
+          <p className="text-sm font-medium text-neutral-500 mt-2 text-center">
+            {isLogin ? "Connectez-vous pour retrouver votre carnet d'ascensions." : "Créez un compte pour suivre vos sommets."}
+          </p>
+        </div>
+
+        {error && <div className="mb-6 p-3 bg-red-50 text-red-600 text-sm font-bold rounded-xl border border-red-100">{error}</div>}
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div>
+            <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Email</label>
+            <input 
+              required type="email" value={email} onChange={(e) => setEmail(e.target.value)} 
+              className="w-full p-3.5 text-sm font-medium border border-neutral-200 rounded-xl outline-none focus:border-neutral-400 transition-colors" 
+              placeholder="alpiniste@altis.com" 
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Mot de passe</label>
+            <input 
+              required type="password" value={password} onChange={(e) => setPassword(e.target.value)} 
+              className="w-full p-3.5 text-sm font-medium border border-neutral-200 rounded-xl outline-none focus:border-neutral-400 transition-colors" 
+              placeholder="••••••••" 
+            />
+          </div>
+
+          <button disabled={loading} type="submit" className="w-full mt-2 py-3.5 bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50">
+            {loading ? "Chargement..." : isLogin ? "Se connecter" : "Créer mon compte"}
+          </button>
+        </form>
+
+        <div className="mt-8 pt-6 border-t border-neutral-100 text-center">
+          <p className="text-sm text-neutral-500 font-medium">
+            {isLogin ? "Pas encore de compte ?" : "Vous avez déjà un compte ?"}
+          </p>
+          <button onClick={() => setIsLogin(!isLogin)} className="text-sm font-bold text-emerald-600 hover:text-emerald-700 mt-1 transition-colors">
+            {isLogin ? "Créer un compte gratuitement" : "Connectez-vous ici"}
+          </button>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+===== FILE: app/(auth)/register/page.tsx =====
+
+
+===== FILE: app/dashboard/page.tsx =====
+"use client";
+import { useState, useEffect, useMemo } from "react";
+import DashboardStats from "@/features/user/DashboardStats";
+import RecentAscensions from "@/features/user/RecentAscensions";
+import { UserStats, Ascension } from "@/features/user/userTypes";
+import { getUserAscensions } from "@/features/user/userService";
+
+// NOUVEAUX IMPORTS : Pour aller lire la table des drapeaux
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "@/shared/lib/firebase";
+
+export default function DashboardPage() {
+  const [ascensions, setAscensions] = useState<Ascension[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  const currentUserId = "user_test_123";
+
+  useEffect(() => {
+    async function fetchDashboardData() {
+      try {
+        // 1. On interroge les ascensions ET les couleurs en parallèle
+        const qColors = query(collection(db, "user_markers"), where("userId", "==", currentUserId));
+        
+        const [ascensionsData, colorsSnap] = await Promise.all([
+          getUserAscensions(currentUserId),
+          getDocs(qColors)
+        ]);
+
+        // 2. On crée le dictionnaire des couleurs { "id_sommet": "#couleur" }
+        const colorsMap: Record<string, string> = {};
+        colorsSnap.docs.forEach(doc => {
+          colorsMap[doc.data().summitId] = doc.data().color;
+        });
+
+        // 3. On injecte la couleur du drapeau dans les données de l'ascension
+        const ascensionsWithColors = ascensionsData.map(asc => ({
+          ...asc,
+          customColor: colorsMap[asc.summitId] || "#10b981" // Vert par défaut au cas où
+        }));
+        
+        // 4. On trie et on sauvegarde dans l'état
+        const sortedData = ascensionsWithColors.sort((a, b) => new Date(b.dateAscension).getTime() - new Date(a.dateAscension).getTime());
+        setAscensions(sortedData);
+
+      } catch (error) {
+        console.error("Erreur de chargement du dashboard :", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDashboardData();
+  }, [currentUserId]);
+
+  const stats = useMemo<UserStats>(() => {
+    if (ascensions.length === 0) return { totalSummits: 0, totalAscent: 0, maxAltitude: 0 };
+    
+    return {
+      totalSummits: ascensions.length,
+      totalAscent: ascensions.reduce((acc, curr) => acc + curr.altitude, 0),
+      maxAltitude: Math.max(...ascensions.map(a => a.altitude))
+    };
+  }, [ascensions]);
+
+  if (loading) {
+    return <div className="min-h-screen bg-neutral-50 pt-24 pb-12 px-6 flex justify-center items-center text-sm font-bold text-neutral-400">Chargement de votre carnet...</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-neutral-50 pt-24 pb-12 px-6">
+      <div className="max-w-5xl mx-auto">
+        
+        <div className="mb-8">
+          <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Mon Espace</h1>
+          <p className="text-neutral-500 mt-1 font-medium">Retrouvez toutes vos statistiques et ascensions.</p>
+        </div>
+
+        <DashboardStats stats={stats} />
+        <RecentAscensions ascensions={ascensions} />
+
+      </div>
+    </div>
+  );
+}
+
+===== FILE: app/globals.css =====
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+  }
+  .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+  }
+}
+
+.altis-popup .mapboxgl-popup-content {
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.altis-popup .mapboxgl-popup-tip {
+  display: none !important;
+}
+
+===== FILE: app/layout.tsx =====
+import Header from "@/shared/ui/Header";
+import { AuthProvider } from "@/shared/lib/AuthContext";
+import "./globals.css";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="fr">
+      <body className="h-screen w-screen overflow-hidden bg-neutral-900 antialiased">
+        <AuthProvider>
+          <Header />
+          <main className="h-full w-full overflow-y-auto">
+            {children}
+          </main>
+        </AuthProvider>
+      </body>
+    </html>
+  );
+}
+
+===== FILE: app/page.tsx =====
+import MapboxViewer from "@/features/map/MapboxViewer";
+import MapFilters from "@/features/map/MapFilters";
+import QuickStats from "@/features/user/QuickStats";
+import FloatingSearch from "@/features/search/FloatingSearch";
+
+export default function Home() {
+  return (
+    <div className="w-full h-full relative overflow-hidden">
+      {/* L'arrière-plan interactif */}
+      <MapboxViewer />
+      
+      {/* La couche UI (User Interface) superposée */}
+      <MapFilters />
+      <QuickStats />
+      <FloatingSearch />
+    </div>
+  );
+}
+
+===== FILE: app/sommets/[id]/page.tsx =====
+import SummitDetail from "@/features/summits/SummitDetail";
+
+// 1. On précise que params est une Promesse (Promise<{ id: string }>)
+// 2. On ajoute 'async' devant la fonction
+export default async function PageSommet({ params }: { params: Promise<{ id: string }> }) {
+  
+  // 3. On "déballe" les paramètres de l'URL avant de les utiliser
+  const resolvedParams = await params;
+
+  return (
+    <div className="min-h-screen bg-neutral-50 pt-24 px-6">
+      {/* On passe l'ID de manière sécurisée au composant client */}
+      <SummitDetail summitId={resolvedParams.id} />
+    </div>
+  );
+}
+
+===== FILE: app/sommets/ajouter/page.tsx =====
+"use client";
+import AddSummitForm from "@/features/summits/AddSummitForm";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { importSommetsFromOSM } from "@/features/summits/importService";
+import { useState } from "react";
+
+export default function AjouterSommetPage() {
+  // 1. La logique et le state sont bien À L'INTÉRIEUR du composant
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleMassImport = async () => {
+    setIsImporting(true);
+    try {
+      const count = await importSommetsFromOSM();
+      alert(`Succès ! ${count} sommets importés depuis OpenStreetMap.`);
+    } catch (error) {
+      alert("Erreur lors de l'importation. Regarde la console.");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  // 2. Le return englobe TOUT dans une seule grande div (le fond gris)
+  return (
+    <div className="min-h-screen bg-neutral-50 pt-24 pb-12 px-6 overflow-y-auto">
+      
+      {/* --- LE BLOC OUTIL ADMIN (L'import OSM) --- */}
+      <div className="max-w-3xl mx-auto mb-8 p-6 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between">
+        <div>
+          <h3 className="font-bold text-blue-900">Importation de masse (Outil Admin)</h3>
+          <p className="text-sm text-blue-700">Aspire 20 sommets autour du Mont Blanc via OpenStreetMap.</p>
+        </div>
+        <button 
+          onClick={handleMassImport} 
+          disabled={isImporting}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50"
+        >
+          {isImporting ? "Importation..." : "Lancer le script"}
+        </button>
+      </div>
+
+      {/* --- L'EN-TÊTE DU FORMULAIRE MANUEL --- */}
+      <div className="max-w-3xl mx-auto mb-6">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-neutral-500 hover:text-neutral-900 transition-colors">
+          <ArrowLeft size={16} />
+          Retour à la carte
+        </Link>
+        <h1 className="text-3xl font-black text-black mt-4 tracking-tight">Ajouter un sommet</h1>
+        <p className="text-neutral-500 mt-1 font-medium">Enregistrez un nouveau point d'intérêt dans la base de données globale.</p>
+      </div>
+
+      {/* --- LE COMPOSANT FORMULAIRE --- */}
+      <AddSummitForm />
+      
+    </div>
+  );
+}
+
+===== FILE: app/sommets/page.tsx =====
+
+
+===== FILE: features/auth/AuthForm.tsx =====
+
+
+===== FILE: features/auth/authService.ts =====
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut 
+} from "firebase/auth";
+import { auth } from "@/shared/lib/firebase";
+
+export async function registerUser(email: string, password: string) {
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  return userCredential.user;
+}
+
+export async function loginUser(email: string, password: string) {
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  return userCredential.user;
+}
+
+export async function logoutUser() {
+  await signOut(auth);
+}
+
+===== FILE: features/map/MapFilters.tsx =====
+// src/features/map/MapFilters.tsx
+import { SlidersHorizontal, CheckCircle2, MapPin } from 'lucide-react';
+
+export default function MapFilters() {
+  return (
+    // Utilisation de top-28 et bottom-28 pour occuper l'espace, et overflow-y-auto pour le scroll
+    <div className="fixed top-20 bottom-4 left-4 w-86 bg-white border border-neutral-200 shadow-lg rounded-3xl p-5 z-40 flex flex-col gap-6 overflow-y-auto scrollbar-hide">
+      
+      <div className="flex items-center gap-3 border-b border-neutral-200/50 pb-3 shrink-0">
+        <SlidersHorizontal size={18} className="text-emerald-600" />
+        <h2 className="font-bold text-neutral-800 tracking-tight">Filtres</h2>
+      </div>
+
+      <div className="flex flex-col gap-6">
+        {/* Catégorie 1 */}
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider pl-2">Statut</span>
+          <button className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/60 transition-colors w-full text-left text-sm font-medium text-neutral-700">
+            <CheckCircle2 size={18} className="text-emerald-500" />
+            Sommets gravis
+          </button>
+          <button className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/60 transition-colors w-full text-left text-sm font-medium text-neutral-700">
+            <MapPin size={18} className="text-neutral-400" />
+            À découvrir
+          </button>
+        </div>
+
+        {/* Catégorie 2 */}
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider pl-2">Régions</span>
+          <select className="w-full bg-neutral/50 border border-white/60 text-neutral-700 text-sm font-medium rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none cursor-pointer shadow-sm">
+            <option>Toutes les régions</option>
+            <option>Massif du Mont-Blanc</option>
+            <option>Écrins</option>
+            <option>Vanoise</option>
+          </select>
+        </div>
+        
+        {/* Tu pourras ajouter autant de filtres que tu veux ici, la barre scrollera automatiquement ! */}
+      </div>
+    </div>
+  );
+}
+
+===== FILE: features/map/MapboxViewer.tsx =====
+"use client";
+import { useState, useEffect } from 'react';
+import Map, { Source, Marker, Popup } from 'react-map-gl/mapbox'; 
+import 'mapbox-gl/dist/mapbox-gl.css';
+import Link from 'next/link';
+import { Plus, Minus, Compass, Mountain, Flag, TrendingUp, MountainSnow, MousePointerClick } from 'lucide-react'; // Ajout des nouveaux icônes
+import { getUserAscensions } from '../user/userService';
+import { Ascension } from '../user/userTypes';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/shared/lib/firebase';
+import { Sommet } from '../summits/summitTypes';
+
+export default function MapboxViewer() {
+  const [viewState, setViewState] = useState({ longitude: 6.8694, latitude: 45.4, zoom: 8, pitch: 45, bearing: 0 });
+  const [popupInfo, setPopupInfo] = useState<Sommet | null>(null); // Type précisé
+  
+  const [sommets, setSommets] = useState<Sommet[]>([]);
+  const [markerColors, setMarkerColors] = useState<Record<string, string>>({});
+  const [userAscensions, setUserAscensions] = useState<Record<string, Ascension>>({});
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const currentUserId = "user_test_123";
+        // On cible UNIQUEMENT la nouvelle table des marqueurs
+        const qColors = query(collection(db, "user_markers"), where("userId", "==", currentUserId));
+
+        const [sommetsSnap, colorsSnap] = await Promise.all([
+          getDocs(collection(db, "sommets")),
+          getDocs(qColors)
+        ]);
+        
+        setSommets(sommetsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Sommet[]);
+
+        const colorsMap: Record<string, string> = {};
+        colorsSnap.docs.forEach(doc => {
+          colorsMap[doc.data().summitId] = doc.data().color;
+        });
+        setMarkerColors(colorsMap);
+
+      } catch (error) {
+        console.error("Erreur:", error);
+      }
+    }
+    fetchData();
+  }, []);
+
+  const handleZoomIn = () => setViewState(prev => ({ ...prev, zoom: prev.zoom + 1 }));
+  const handleZoomOut = () => setViewState(prev => ({ ...prev, zoom: prev.zoom - 1 }));
+  const handleResetNorth = () => setViewState(prev => ({ ...prev, bearing: 0 }));
+  const handleToggle3D = () => setViewState(prev => ({ ...prev, pitch: prev.pitch === 0 ? 60 : 0 }));
+
+  return (
+    <section className="w-full h-full relative">
+      <Map
+        {...viewState}
+        onMove={evt => setViewState(evt.viewState)}
+        mapStyle="mapbox://styles/mapbox/outdoors-v12"
+        mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
+        terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
+      >
+        <Source id="mapbox-dem" type="raster-dem" url="mapbox://mapbox.mapbox-terrain-dem-v1" tileSize={512} maxzoom={14} />
+
+        {/* MARQUEURS */}
+        {sommets.map((sommet) => {
+          // La couleur vient directement de la table user_markers, sinon bleu par défaut
+          const markerColor = markerColors[sommet.id] || "#3b82f6";
+
+          return (
+            <Marker key={sommet.id} longitude={sommet.coordonnees.longitude} latitude={sommet.coordonnees.latitude} anchor="bottom">
+              <div 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPopupInfo(sommet);
+                }} 
+                style={{ backgroundColor: markerColor }}
+                className={`cursor-pointer relative z-10 h-5 w-5 rounded-full border-[2.5px] border-white shadow-md hover:scale-125 transition-transform`}
+              />
+            </Marker>
+          );
+        })}
+
+        {/* --- LE NOUVEAU POPUP "FICHE TECHNIQUE" --- */}
+        {popupInfo && (
+          <Popup 
+            longitude={popupInfo.coordonnees.longitude} 
+            latitude={popupInfo.coordonnees.latitude} 
+            anchor="bottom" 
+            offset={[-50, -15]} 
+            
+            closeButton={false} 
+            onClose={() => setPopupInfo(null)} 
+            className="altis-popup z-20"
+          >
+            {/* Le cadre principal cliquable */}
+            <Link 
+              href={`/sommets/${popupInfo.id}`} 
+              // On le met en 'relative' pour positionner l'icône de souris en absolu
+              className="block w-[340px] p-2.5 bg-white rounded-2xl shadow-xl border border-neutral-200 hover:border-emerald-500 transition-colors group cursor-pointer relative"
+            >
+              
+              {/* NOUVEAU : Petit icône de clic discret en haut à droite */}
+              <div className="absolute top-2.5 right-2.5 text-neutral-400 group-hover:text-emerald-500 transition-colors">
+                <MousePointerClick size={14} />
+              </div>
+
+              <div className="flex gap-3 items-center">
+                
+                {/* Petite photo à gauche (Image BD) */}
+                <div 
+                  className="w-14 h-14 rounded-xl bg-neutral-100 flex-shrink-0" 
+                  style={{ backgroundImage: `url(${popupInfo.image_couverture_url || 'https://images.unsplash.com/photo-1549880338-65dd4bc8a202?q=80&w=200'})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                />
+                
+                {/* Contenu à droite */}
+                <div className="flex flex-col flex-grow overflow-hidden pr-3">
+                  
+                  {/* Titre (Légèrement plus petit pour l'icône) */}
+                  <h3 className="font-bold text-neutral-900 text-sm leading-tight mb-1.5 truncate group-hover:text-emerald-600 transition-colors">
+                    {popupInfo.nom}
+                  </h3>
+                  
+                  {/* Les 4 valeurs en ligne, avec ABRÉVIATIONS */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="flex flex-col">
+                      {/* NOUVEAU LABEL : Alti. */}
+                      <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">Alti.</span>
+                      <span className="text-xs font-semibold text-neutral-800">{popupInfo.altitude}m</span>
+                    </div>
+                    
+                    <div className="flex flex-col">
+                      {/* NOUVEAU LABEL : Proé. */}
+                      <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">Proé.</span>
+                      <span className="text-xs font-semibold text-neutral-800">{popupInfo.prominence ? `${popupInfo.prominence}m` : '-'}</span>
+                    </div>
+                    
+                    <div className="flex flex-col overflow-hidden">
+                      {/* NOUVEAU LABEL : Massif */}
+                      <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">Massif</span>
+                      <span className="text-xs font-semibold text-neutral-800 truncate w-full" title={popupInfo.massif_principal}>{popupInfo.massif_principal}</span>
+                    </div>
+                    
+                    <div className="flex flex-col overflow-hidden">
+                      {/* NOUVEAU LABEL : Pays */}
+                      <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">Pays</span>
+                      {/* On n'affiche que le premier pays pour la compacité */}
+                      <span className="text-xs font-semibold text-neutral-800 truncate w-full" title={popupInfo.pays.join(', ')}>{popupInfo.pays[0]}</span>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </Link>
+          </Popup>
+        )}
+
+        {/* BOUTONS DE CONTRÔLE DE CAMÉRA */}
+        <div className="absolute bottom-60 right-4 flex flex-col gap-3 z-30">
+          <div className="flex flex-col bg-white rounded-xl shadow-md border border-neutral-200 overflow-hidden">
+            <button onClick={handleZoomIn} className="p-2.5 hover:bg-neutral-100 border-b border-neutral-200 text-neutral-600 transition-colors">
+              <Plus size={18} strokeWidth={2.5} />
+            </button>
+            <button onClick={handleZoomOut} className="p-2.5 hover:bg-neutral-100 text-neutral-600 transition-colors">
+              <Minus size={18} strokeWidth={2.5} />
+            </button>
+          </div>
+          <div className="flex flex-col bg-white rounded-xl shadow-md border border-neutral-200 overflow-hidden">
+            <button onClick={handleResetNorth} className="p-2.5 hover:bg-neutral-100 border-b border-neutral-200 text-neutral-600 transition-colors flex justify-center items-center" title="Remettre au Nord">
+              <Compass size={18} strokeWidth={2.5} style={{ transform: `rotate(${-viewState.bearing || 0}deg)`, transition: 'transform 0.3s ease' }} />
+            </button>
+            <button onClick={handleToggle3D} className="p-2.5 hover:bg-neutral-100 text-neutral-700 font-black text-[10px] tracking-wider transition-colors h-[38px] flex justify-center items-center" title="Basculer 2D/3D">
+              {viewState.pitch > 0 ? '2D' : '3D'}
+            </button>
+          </div>
+        </div>
+      </Map>
+    </section>
+  );
+}
+
+===== FILE: features/map/useMapbox.ts =====
+
+
+===== FILE: features/search/FloatingSearch.tsx =====
+// src/features/search/FloatingSearch.tsx
+import { Search, Command } from 'lucide-react';
+
+export default function FloatingSearch() {
+  return (
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl z-40">
+      <div className="relative group">
+        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+          <Search size={20} className="text-neutral-500 group-focus-within:text-emerald-600 transition-colors" />
+        </div>
+        
+        <input 
+          type="text" 
+          placeholder="Rechercher..." 
+          className="w-full bg-white/55 backdrop-blur-sm backdrop-saturate-200 border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-full py-4 pl-14 pr-16 text-neutral-800 font-medium placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
+        />
+      </div>
+    </div>
+  );
+}
+
+===== FILE: features/search/useSearch.ts =====
+
+
+===== FILE: features/summits/AddSummitForm.tsx =====
+"use client";
+import { useState } from "react";
+import { addSummit } from "./summitService";
+
+export default function AddSummitForm() {
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  // L'état local du formulaire (avec des valeurs par défaut vides)
+  const [formData, setFormData] = useState({
+    nom: "",
+    noms_alternatifs: "", // On stocke en texte temporairement (séparé par des virgules)
+    altitude: "",
+    lat: "",
+    lng: "",
+    pays: "", // Séparé par des virgules
+    massif_principal: "",
+    prominence: "",
+    difficulte_moyenne: "F",
+    image_couverture_url: ""
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setSuccess(false);
+
+    try {
+      // On formate les données pour qu'elles correspondent exactement à ton type "Sommet"
+      const formattedData = {
+        nom: formData.nom,
+        noms_alternatifs: formData.noms_alternatifs.split(",").map(s => s.trim()).filter(Boolean),
+        altitude: Number(formData.altitude),
+        coordonnees: {
+          latitude: Number(formData.lat),
+          longitude: Number(formData.lng)
+        },
+        pays: formData.pays.split(",").map(s => s.trim()).filter(Boolean),
+        massif_principal: formData.massif_principal,
+        prominence: formData.prominence ? Number(formData.prominence) : undefined,
+        difficulte_moyenne: formData.difficulte_moyenne as any,
+        image_couverture_url: formData.image_couverture_url,
+      };
+
+      await addSummit(formattedData);
+      setSuccess(true);
+      // Optionnel : on peut vider le formulaire ici
+    } catch (error) {
+      alert("Erreur lors de l'ajout. Regarde la console.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto bg-white p-8 rounded-3xl border border-neutral-200 shadow-sm flex flex-col gap-8">
+      
+      {/* SECTION 1 : Identité */}
+      <section>
+        <h2 className="text-lg font-bold text-black border-b border-neutral-100 pb-2 mb-4">1. Identité & Géographie</h2>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2">
+            <label className="block text-sm font-bold text-black mb-1">Nom du sommet *</label>
+            <input required type="text" name="nom" value={formData.nom} onChange={handleChange} className="w-full p-3 bg-black border border-neutral-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ex: Mont Blanc" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-black mb-1">Altitude (m) *</label>
+            <input required type="number" name="altitude" value={formData.altitude} onChange={handleChange} className="w-full p-3 bg-black border border-neutral-200 rounded-xl outline-none" placeholder="Ex: 4807" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-black mb-1">Pays (séparés par des virgules)</label>
+            <input type="text" name="pays" value={formData.pays} onChange={handleChange} className="w-full p-3 bg-black border border-neutral-200 rounded-xl outline-none" placeholder="Ex: France, Italie" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-black mb-1">Latitude *</label>
+            <input required type="number" step="any" name="lat" value={formData.lat} onChange={handleChange} className="w-full p-3 bg-black border border-neutral-200 rounded-xl outline-none" placeholder="Ex: 45.8326" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-black mb-1">Longitude *</label>
+            <input required type="number" step="any" name="lng" value={formData.lng} onChange={handleChange} className="w-full p-3 bg-black border border-neutral-200 rounded-xl outline-none" placeholder="Ex: 6.8652" />
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 2 : Topographie */}
+      <section>
+        <h2 className="text-lg font-bold text-neutral-800 border-b border-neutral-100 pb-2 mb-4">2. Topographie</h2>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-bold text-black mb-1">Massif principal *</label>
+            <input required type="text" name="massif_principal" value={formData.massif_principal} onChange={handleChange} className="w-full p-3 bg-black border border-neutral-200 rounded-xl outline-none" placeholder="Ex: Massif du Mont-Blanc" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-black mb-1">Prominence (m)</label>
+            <input type="number" name="prominence" value={formData.prominence} onChange={handleChange} className="w-full p-3 bg-black border border-neutral-200 rounded-xl outline-none" placeholder="Ex: 4695" />
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 3 : Gamification & Image */}
+      <section>
+        <h2 className="text-lg font-bold text-neutral-800 border-b border-neutral-100 pb-2 mb-4">3. Informations complémentaires</h2>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-bold text-black mb-1">Cotation / Difficulté</label>
+            <select name="difficulte_moyenne" value={formData.difficulte_moyenne} onChange={handleChange} className="w-full p-3 bg-black border border-neutral-200 rounded-xl outline-none cursor-pointer">
+              <option value="F">F (Facile)</option>
+              <option value="PD">PD (Peu Difficile)</option>
+              <option value="AD">AD (Assez Difficile)</option>
+              <option value="D">D (Difficile)</option>
+              <option value="TD">TD (Très Difficile)</option>
+              <option value="ED">ED (Extrêmement Difficile)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-black mb-1">URL de l'image de couverture</label>
+            <input type="url" name="image_couverture_url" value={formData.image_couverture_url} onChange={handleChange} className="w-full p-3 bg-black border border-neutral-200 rounded-xl outline-none" placeholder="https://..." />
+          </div>
+        </div>
+      </section>
+
+      {success && <div className="p-4 bg-emerald-50 text-emerald-700 font-bold rounded-xl text-center">Sommet ajouté avec succès à la base de données !</div>}
+
+      <button disabled={loading} type="submit" className="w-full py-4 bg-neutral-900 hover:bg-neutral-800 text-white font-bold rounded-xl transition-colors disabled:opacity-50 mt-4">
+        {loading ? "Ajout en cours..." : "Ajouter le sommet"}
+      </button>
+    </form>
+  );
+}
+
+===== FILE: features/summits/SummitDetail.tsx =====
+"use client";
+import { useState, useEffect, useMemo } from "react";
+import { Sommet } from "./summitTypes";
+import { Ascension } from "../user/userTypes";
+import { ArrowLeft, Flag, Star, ChevronDown, Check, Edit2, MapPin } from "lucide-react";
+import Link from "next/link";
+import { getSummitById, addAscension, getSummitAscensions, updateAscension, saveMarkerColor, getMarkerColor } from "./summitService";
+
+// Nos belles couleurs prédéfinies (Tailwind colors)
+const TRACE_COLORS = [
+  "#ef4444", // Rouge
+  "#f97316", // Orange
+  "#eab308", // Jaune
+  "#10b981", // Émeraude (défaut)
+  "#3b82f6", // Bleu
+  "#8b5cf6", // Violet
+  "#ec4899", // Rose
+  "#64748b", // Gris/Ardoise
+];
+
+export default function SummitDetail({ summitId }: { summitId: string }) {
+  const [sommet, setSommet] = useState<Sommet | null>(null);
+  const [ascensions, setAscensions] = useState<Ascension[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // État de la boîte d'action : 'prompt' (Pas fait) -> 'form' (En cours d'ajout/édition) -> 'done' (Fait)
+  const [actionState, setActionState] = useState<'prompt' | 'form' | 'done'>('prompt');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [myAscensionId, setMyAscensionId] = useState<string | null>(null); // Pour savoir si on doit Créer ou Mettre à jour
+
+  // États du formulaire
+  const [markerColor, setMarkerColor] = useState("#3b82f6"); // Bleu par défaut
+  const [isColorPaletteOpen, setIsColorPaletteOpen] = useState(false);
+  const [dateAscension, setDateAscension] = useState(new Date().toISOString().split('T')[0]);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [sortBy, setSortBy] = useState<'recent' | 'rating'>('recent');
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const currentUserId = "user_test_123";
+        const [summitData, ascensionsData, colorData] = await Promise.all([
+          getSummitById(summitId),
+          getSummitAscensions(summitId),
+          getMarkerColor(currentUserId, summitId) // On charge la couleur enregistrée
+        ]);
+        
+        setSommet(summitData);
+        setAscensions(ascensionsData);
+        setMarkerColor(colorData); // On applique la couleur (Bleu, Vert, ou perso)
+
+        const existingAscension = ascensionsData.find(a => a.userId === currentUserId);
+        if (existingAscension) {
+          setActionState('done');
+          setMyAscensionId(existingAscension.id);
+          setDateAscension(existingAscension.dateAscension);
+          setRating(existingAscension.rating);
+          setComment(existingAscension.comment);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [summitId]);
+
+  // LA FONCTION DE CHANGEMENT MANUEL DE COULEUR
+  const handleColorChange = async (color: string) => {
+    setMarkerColor(color);
+    setIsColorPaletteOpen(false);
+    await saveMarkerColor("user_test_123", summitId, color);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sommet || rating === 0) return alert("Veuillez donner une note.");
+    setIsSubmitting(true);
+
+    try {
+      // 1. Logique de couleur automatique : si c'est encore bleu, on passe en vert !
+      let finalColor = markerColor;
+      if (markerColor === "#3b82f6") {
+        finalColor = "#10b981"; // Vert émeraude
+        setMarkerColor(finalColor);
+        await saveMarkerColor("user_test_123", summitId, finalColor);
+      }
+
+      // 2. On enregistre l'ascension SANS la couleur
+      const ascensionData = {
+        userId: "user_test_123",
+        summitId: summitId,
+        summitName: sommet.nom,
+        altitude: sommet.altitude,
+        dateAscension,
+        rating,
+        comment,
+        customColor: finalColor // <-- C'EST LA LIGNE QU'IL MANQUAIT
+      };
+
+      if (myAscensionId) {
+        await updateAscension(myAscensionId, ascensionData);
+        setAscensions(prev => prev.map(a => a.id === myAscensionId ? { id: myAscensionId, ...ascensionData } : a));
+      } else {
+        const newId = await addAscension(ascensionData);
+        setMyAscensionId(newId);
+        setAscensions([{ id: newId, ...ascensionData }, ...ascensions]);
+      }
+      setActionState('done');
+    } catch (error) {
+      alert("Erreur lors de l'enregistrement.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const stats = useMemo(() => {
+    if (ascensions.length === 0) return { total: 0, avg: 0, distribution: [0, 0, 0, 0, 0] };
+    const total = ascensions.length;
+    const sum = ascensions.reduce((acc, curr) => acc + curr.rating, 0);
+    return { 
+      total, 
+      avg: (sum / total).toFixed(1), 
+      distribution: [5, 4, 3, 2, 1].map(star => ascensions.filter(a => a.rating === star).length)
+    };
+  }, [ascensions]);
+
+  const sortedAscensions = useMemo(() => {
+    return [...ascensions].sort((a, b) => {
+      if (sortBy === 'recent') return new Date(b.dateAscension).getTime() - new Date(a.dateAscension).getTime();
+      return b.rating - a.rating;
+    });
+  }, [ascensions, sortBy]);
+
+  if (loading) return <div className="p-20 text-center text-sm font-medium text-neutral-400">Chargement des données...</div>;
+  if (!sommet) return <div className="p-20 text-center text-sm font-medium text-neutral-400">Sommet introuvable.</div>;
+
+  return (
+    <div className="max-w-4xl mx-auto pb-24">
+      
+      <div className="mb-6">
+        <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-neutral-400 hover:text-neutral-900 transition-colors">
+          <ArrowLeft size={14} /> Retour
+        </Link>
+      </div>
+
+      {/* SECTION 1 : EN-TÊTE (Encadré discret) */}
+      <div className="bg-white rounded-[2rem] border border-neutral-200 shadow-sm p-2 mb-8">
+        <div 
+          className="h-64 md:h-[340px] w-full rounded-t-3xl rounded-b-xl bg-neutral-100 mb-6"
+          style={{ backgroundImage: `url(${sommet.image_couverture_url || 'https://images.unsplash.com/photo-1549880338-65dd4bc8a202?q=80&w=1200'})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+        />
+        
+        <div className="px-6 pb-6">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h1 className="text-3xl font-black text-neutral-900 tracking-tight mr-2 inline-block">{sommet.nom}</h1>
+              {sommet.noms_alternatifs && sommet.noms_alternatifs.length > 0 && (
+                <span className="text-xl font-normal text-neutral-400">({sommet.noms_alternatifs[0]})</span>
+              )}
+            </div>
+
+            {/* Drapeau épuré sans cadre, prenant la couleur choisie */}
+            <div className="relative flex flex-col items-center">
+              <button 
+                onClick={() => setIsColorPaletteOpen(!isColorPaletteOpen)}
+                className="focus:outline-none hover:scale-110 transition-transform"
+                title="Changer la couleur sur la carte"
+              >
+                <Flag size={24} color={markerColor} fill={markerColor} className="drop-shadow-sm transition-colors duration-300" />
+              </button>
+              
+              {isColorPaletteOpen && (
+                <div className="absolute top-8 right-0 bg-white border border-neutral-100 shadow-xl rounded-2xl p-3 flex gap-2 z-20 animate-in fade-in zoom-in-95">
+                  {TRACE_COLORS.map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => handleColorChange(color)} // On utilise la nouvelle fonction
+                      className={`w-6 h-6 rounded-full transition-all ${markerColor === color ? 'ring-2 ring-offset-2 ring-neutral-800 scale-110' : 'hover:scale-110'}`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+            </div>
+
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-neutral-500 border-b border-neutral-100 pb-5 mb-5">
+            <span>Altitude <strong className="text-neutral-900 font-bold">{sommet.altitude}m</strong></span>
+            <span>Proéminence <strong className="text-neutral-900 font-bold">{sommet.prominence ? `${sommet.prominence}m` : '-'}</strong></span>
+            <span>Massif <strong className="text-neutral-900 font-bold">{sommet.massif_principal}</strong></span>
+            <span>Pays <strong className="text-neutral-900 font-bold">{sommet.pays.join(', ')}</strong></span>
+            <span className="font-mono text-[10px] bg-neutral-50 px-2 py-0.5 rounded">{sommet.coordonnees.latitude.toFixed(4)}, {sommet.coordonnees.longitude.toFixed(4)}</span>
+          </div>
+
+          <p className="text-sm text-neutral-600 leading-relaxed text-justify">
+            Ce sommet est l'un des plus emblématiques de sa région, offrant un panorama exceptionnel à 360 degrés sur les massifs environnants. Sa première ascension documentée date de la fin du 19ème siècle. La voie normale nécessite une bonne condition physique et reste exposée aux caprices de la météo montagnarde. C'est un incontournable pour les passionnés d'alpinisme.
+          </p>
+        </div>
+      </div>
+
+      {/* SECTION 2 : ACTION & FORMULAIRE (Encadré discret avec transitions d'état) */}
+      <div className="bg-white rounded-[2rem] border border-neutral-200 shadow-sm p-8 mb-8 transition-all">
+        
+        {/* ÉTAT 1 : PROMPT */}
+        {actionState === 'prompt' && (
+          <div className="text-center">
+            <MapPin size={32} className="mx-auto text-neutral-300 mb-4" />
+            <h3 className="text-lg font-bold text-neutral-900 mb-1">Avez-vous gravi ce sommet ?</h3>
+            <p className="text-sm text-neutral-500 mb-6">Ajoutez-le à votre carnet pour sauvegarder vos souvenirs et vos traces.</p>
+            <button onClick={() => setActionState('form')} className="px-6 py-3 bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-bold rounded-xl transition-colors">
+              Oui, enregistrer mon ascension
+            </button>
+          </div>
+        )}
+
+        {/* ÉTAT 2 : FORMULAIRE (Création ou Édition) */}
+        {actionState === 'form' && (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <h3 className="font-bold text-lg text-neutral-900 border-b border-neutral-100 pb-3">Détails de l'ascension</h3>
+            
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex flex-col gap-4 md:w-1/2">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Date</label>
+                  <input required type="date" value={dateAscension} onChange={(e) => setDateAscension(e.target.value)} className="w-full p-2.5 text-sm font-medium border border-neutral-200 rounded-xl outline-none focus:border-neutral-400 transition-colors" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Note globale</label>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star key={s} size={24} onClick={() => setRating(s)} onMouseEnter={() => setHoverRating(s)} onMouseLeave={() => setHoverRating(0)} className={`cursor-pointer transition-colors ${s <= (hoverRating || rating) ? "text-amber-400 fill-amber-400" : "text-neutral-200"}`} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Votre récit / Avis</label>
+              <textarea rows={3} value={comment} onChange={(e) => setComment(e.target.value)} className="w-full p-3 text-sm font-medium border border-neutral-200 rounded-xl outline-none focus:border-neutral-400 transition-colors resize-none" placeholder="Partagez les conditions, la voie empruntée..." />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button type="button" onClick={() => setActionState(myAscensionId ? 'done' : 'prompt')} className="px-5 py-2.5 text-sm font-bold text-neutral-500 hover:bg-neutral-100 rounded-xl transition-colors">Annuler</button>
+              <button type="submit" disabled={isSubmitting} className="px-6 py-2.5 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-colors disabled:opacity-50 shadow-sm">
+                {isSubmitting ? "Enregistrement..." : myAscensionId ? "Mettre à jour" : "Publier l'ascension"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ÉTAT 3 : FAIT (Mode affichage avec bouton Modifier) */}
+        {actionState === 'done' && (
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in duration-300">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-emerald-50 flex items-center justify-center border border-emerald-100 flex-shrink-0">
+                <Check size={20} className="text-emerald-500" />
+              </div>
+              <div>
+                <h3 className="font-bold text-neutral-900">Ascension enregistrée</h3>
+                <p className="text-xs text-neutral-500 mt-0.5">Fait le {new Date(dateAscension).toLocaleDateString('fr-FR')} • Évalué {rating}/5</p>
+              </div>
+            </div>
+            <button onClick={() => setActionState('form')} className="flex items-center gap-2 px-4 py-2 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 text-neutral-700 text-sm font-bold rounded-xl transition-colors">
+              <Edit2 size={14} /> Modifier mon avis
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* SECTION 3 : AVIS DE LA COMMUNAUTÉ (Encadré discret) */}
+      <div className="bg-white rounded-[2rem] border border-neutral-200 shadow-sm p-8">
+        <h2 className="text-xl font-black text-neutral-900 mb-8 border-b border-neutral-100 pb-4">Carnet de la communauté</h2>
+
+        {stats.total === 0 ? (
+          <p className="text-sm font-medium text-neutral-500 italic text-center py-8">Aucun avis pour le moment. Soyez le premier à partager votre expérience !</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
+            
+            {/* Colonne Stats */}
+            <div className="md:col-span-4 flex flex-col gap-3">
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-5xl font-black text-neutral-900 tracking-tighter">{stats.avg}</span>
+                <span className="text-sm font-bold text-neutral-400">/ 5</span>
+              </div>
+              <div className="flex flex-col gap-2">
+                {[5, 4, 3, 2, 1].map((star, index) => {
+                  const count = stats.distribution[index];
+                  const percentage = stats.total > 0 ? (count / stats.total) * 100 : 0;
+                  return (
+                    <div key={star} className="flex items-center gap-3 text-xs font-bold text-neutral-500">
+                      <span className="w-8 text-right">{star} ét.</span>
+                      <div className="flex-grow h-2 bg-neutral-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-amber-400 rounded-full transition-all duration-500" style={{ width: `${percentage}%` }}></div>
+                      </div>
+                      <span className="w-8 text-right text-neutral-400">{percentage.toFixed(0)}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-2">{stats.total} avis partagés</p>
+            </div>
+
+            {/* Colonne Liste */}
+            <div className="md:col-span-8">
+              <div className="flex justify-between items-center mb-6">
+                <span className="text-sm font-bold text-neutral-900">Récits d'ascension</span>
+                <div className="relative">
+                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value as 'recent' | 'rating')} className="appearance-none bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold text-neutral-600 pl-3 pr-8 py-2 cursor-pointer outline-none hover:bg-neutral-100">
+                    <option value="recent">Plus récents</option>
+                    <option value="rating">Mieux notés</option>
+                  </select>
+                  <ChevronDown size={14} className="absolute right-2.5 top-2.5 text-neutral-500 pointer-events-none" />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-6">
+                {sortedAscensions.map((asc) => (
+                  <div key={asc.id} className="flex flex-col gap-2 pb-6 border-b border-neutral-100 last:border-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: asc.customColor, boxShadow: `0 0 0 2px white, 0 0 0 4px ${asc.customColor}` }}></div>
+                        <span className="text-sm font-bold text-neutral-900">Alpiniste Anonyme</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">{new Date(asc.dateAscension).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                    <div className="flex gap-0.5">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star key={s} size={14} className={s <= asc.rating ? "text-amber-400 fill-amber-400" : "text-neutral-200"} />
+                      ))}
+                    </div>
+                    {asc.comment && (
+                      <p className="text-sm text-neutral-600 font-medium leading-relaxed mt-1">{asc.comment}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+}
+
+===== FILE: features/summits/SummitModal.tsx =====
+// src/components/ui/AjoutAscensionModal.tsx
+import { X, Calendar, Clock, CloudSun, Mountain } from 'lucide-react';
+import { Sommet } from './summitTypes'; // On importe notre type !
+
+interface Props {
+  sommet: Sommet;
+  onClose: () => void;
+}
+
+export default function AjoutAscensionModal({ sommet, onClose }: Props) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+      
+      {/* La boîte de la modale */}
+      <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-[0_20px_60px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+        
+        {/* En-tête */}
+        <div className="bg-slate-900 p-6 text-white relative">
+          <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
+            <X size={18} />
+          </button>
+          <span className="text-emerald-400 font-bold text-xs uppercase tracking-widest mb-1 block">Nouvelle ascension</span>
+          <h3 className="text-2xl font-black">{sommet.nom}</h3>
+          <p className="text-slate-400 text-sm mt-1">{sommet.altitude}m • {sommet.massif_principal}</p>
+        </div>
+
+        {/* Le Formulaire */}
+        <div className="p-8 flex flex-col gap-5">
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2"><Calendar size={14}/> Date</label>
+              <input type="date" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-medium text-slate-700" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2"><Clock size={14}/> Temps total</label>
+              <input type="text" placeholder="Ex: 6h 30m" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-medium text-slate-700" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2"><CloudSun size={14}/> Météo</label>
+            <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-medium text-slate-700">
+              <option>Grand beau</option>
+              <option>Nuageux / Mer de nuages</option>
+              <option>Brouillard / Blanc</option>
+              <option>Conditions hivernales difficiles</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Notes personnelles (Voie, conditions...)</label>
+            <textarea rows={3} placeholder="Racontez votre course..." className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-medium text-slate-700 resize-none"></textarea>
+          </div>
+
+          {/* Bouton de validation */}
+          <button className="mt-4 w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl transition-colors flex justify-center items-center gap-2 shadow-lg shadow-emerald-500/30">
+            <Mountain size={20} /> Valider l'ascension
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+===== FILE: features/summits/importService.ts =====
+import { collection, writeBatch, doc } from "firebase/firestore";
+import { db } from "@/shared/lib/firebase";
+
+export async function importSommetsFromOSM() {
+  // 1. La requête sur une seule ligne pour éviter les bugs d'encodage
+  const query = '[out:json];node["natural"="peak"](45.75, 6.75, 45.95, 7.05);out 20;';
+
+  try {
+    console.log("Interrogation d'OpenStreetMap...");
+    const response = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+
+    // --- LE NOUVEAU BOUCLIER DE SÉCURITÉ ---
+    // Si l'API renvoie une erreur (ex: 429 Too Many Requests, ou 400 Bad Request)
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Erreur serveur API:", errorText);
+      throw new Error(`L'API a refusé la requête (Statut ${response.status})`);
+    }
+
+    // On lit d'abord la réponse en texte brut
+    const responseText = await response.text();
+
+    // On vérifie si le texte commence par <?xml (ce qui causait ton crash)
+    if (responseText.trim().startsWith("<?xml")) {
+      console.error("L'API a renvoyé du XML au lieu du JSON. Message :", responseText);
+      throw new Error("L'API Overpass a renvoyé une erreur XML.");
+    }
+
+    // Si tout va bien, on transforme le texte en JSON manuellement
+    const data = JSON.parse(responseText);
+    // --------------------------------------
+
+    if (!data.elements || data.elements.length === 0) {
+      console.log("Aucun sommet trouvé.");
+      return 0;
+    }
+
+    // 2. Préparation du Batch Firebase
+    const batch = writeBatch(db);
+    const sommetsRef = collection(db, "sommets");
+    let count = 0;
+
+    data.elements.forEach((element: any) => {
+      if (element.tags && element.tags.name && element.tags.ele) {
+        const nouveauSommet = {
+          nom: element.tags.name,
+          altitude: Number(element.tags.ele),
+          coordonnees: {
+            latitude: element.lat,
+            longitude: element.lon
+          },
+          pays: ["France"], 
+          massif_principal: "Massif du Mont-Blanc", 
+          difficulte_moyenne: "F",
+          noms_alternatifs: [],
+        };
+
+        const newDocRef = doc(sommetsRef);
+        batch.set(newDocRef, nouveauSommet);
+        count++;
+      }
+    });
+
+    // 3. Envoi à Firebase
+    if (count > 0) {
+      await batch.commit();
+      console.log(`${count} sommets importés avec succès !`);
+      return count;
+    } else {
+      return 0;
+    }
+
+  } catch (error) {
+    console.error("Erreur lors de l'importation :", error);
+    throw error;
+  }
+}
+
+===== FILE: features/summits/summitService.ts =====
+import { Sommet } from "./summitTypes";
+import { doc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, setDoc } from "firebase/firestore";
+import { db } from "@/shared/lib/firebase";
+import { Ascension } from "../user/userTypes";
+
+// Fonction pour ajouter un sommet dans la collection "sommets"
+export async function addSummit(summitData: Omit<Sommet, 'id'>) {
+  try {
+    // addDoc génère automatiquement un ID unique sur Firebase
+    const docRef = await addDoc(collection(db, "sommets"), summitData);
+    console.log("Sommet ajouté avec l'ID: ", docRef.id);
+    return docRef.id;
+  } catch (e) {
+    console.error("Erreur lors de l'ajout du sommet: ", e);
+    throw e;
+  }
+}
+
+// 1. Récupérer un sommet
+export async function getSummitById(id: string) {
+  const docRef = doc(db, "sommets", id);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() } as any;
+  throw new Error("Sommet introuvable");
+}
+
+// 2. Ajouter une ascension (fonctionnelle)
+export async function addAscension(ascensionData: Omit<Ascension, 'id'>) {
+  const docRef = await addDoc(collection(db, "ascensions"), ascensionData);
+  return docRef.id;
+}
+
+// 3. NOUVEAU : Récupérer toutes les ascensions/commentaires pour UN sommet
+export async function getSummitAscensions(summitId: string) {
+  const q = query(collection(db, "ascensions"), where("summitId", "==", summitId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Ascension[];
+}
+
+export async function updateAscension(id: string, data: Partial<Ascension>) {
+  const docRef = doc(db, "ascensions", id);
+  await updateDoc(docRef, data);
+}
+
+export async function saveMarkerColor(userId: string, summitId: string, color: string) {
+  // On crée un ID unique combinant l'utilisateur et le sommet
+  const docRef = doc(db, "user_markers", `${userId}_${summitId}`);
+  // { merge: true } permet de créer le document s'il n'existe pas, ou de le mettre à jour
+  await setDoc(docRef, { userId, summitId, color }, { merge: true });
+}
+
+// 6. NOUVEAU : Récupérer la couleur du drapeau
+export async function getMarkerColor(userId: string, summitId: string) {
+  const docRef = doc(db, "user_markers", `${userId}_${summitId}`);
+  const snap = await getDoc(docRef);
+  return snap.exists() ? snap.data().color : "#3b82f6"; // Bleu par défaut si aucune couleur choisie
+}
+
+===== FILE: features/summits/summitTypes.ts =====
+export interface Coordonnees {
+  latitude: number;
+  longitude: number;
+}
+
+export interface Sommet {
+  // 1. Identité & Géographie de base
+  id: string; // UUID généré par Firebase
+  nom: string;
+  noms_alternatifs?: string[]; 
+  altitude: number;
+  coordonnees: Coordonnees;
+  pays: string[];
+
+  // 2. Topographie & Classification
+  massif_principal: string;
+  soiusa_section?: string;
+  soiusa_sous_section?: string;
+  prominence?: number; 
+
+  // 3. Données "Gamification" & Esthétique
+  listes_celebres?: string[];
+  difficulte_moyenne?: 'F' | 'PD' | 'AD' | 'D' | 'TD' | 'ED' | 'EX'; // Cotation alpine standard
+  image_couverture_url?: string;
+  modele_3d_url?: string; // Pour le futur !
+}
+
+===== FILE: features/user/DashboardStats.tsx =====
+import { Trophy, TrendingUp, MountainSnow } from 'lucide-react';
+import { UserStats } from './userTypes';
+
+export default function DashboardStats({ stats }: { stats: UserStats }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      
+      <div className="bg-white p-6 rounded-3xl border border-neutral-200 shadow-sm flex items-center gap-5">
+        <div className="h-14 w-14 rounded-2xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+          <Trophy size={28} className="text-amber-500" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Sommets gravis</p>
+          <p className="text-3xl font-black text-neutral-900">{stats.totalSummits}</p>
+        </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-3xl border border-neutral-200 shadow-sm flex items-center gap-5">
+        <div className="h-14 w-14 rounded-2xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+          <MountainSnow size={28} className="text-blue-500" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Altitude cumulée</p>
+          <p className="text-3xl font-black text-neutral-900">{stats.totalAscent.toLocaleString()} <span className="text-lg text-neutral-500 font-bold">m</span></p>
+        </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-3xl border border-neutral-200 shadow-sm flex items-center gap-5">
+        <div className="h-14 w-14 rounded-2xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+          <TrendingUp size={28} className="text-emerald-600" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Record absolu</p>
+          <p className="text-3xl font-black text-neutral-900">{stats.maxAltitude} <span className="text-lg text-neutral-500 font-bold">m</span></p>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+===== FILE: features/user/ProfileSettings.tsx =====
+
+
+===== FILE: features/user/QuickStats.tsx =====
+import { Trophy, TrendingUp, MountainSnow } from 'lucide-react';
+
+export default function QuickStats() {
+  return (
+    // Marges réduites, padding plus petit, glassmorphism plus fort
+    <div className="fixed top-20 right-4 bg-white border border-neutral-200 shadow-lg rounded-3xl p-2.5 z-40 flex gap-2.5">
+  <div className="flex flex-col items-center justify-center bg-neutral-50 border border-neutral-100 rounded-2xl p-2 min-w-17.5">
+        <Trophy size={16} className="text-amber-500 mb-1" />
+        <span className="text-lg font-black text-neutral-800 leading-none">14</span>
+        <span className="text-[9px] font-bold text-neutral-600 uppercase tracking-wide mt-1">Sommets</span>
+      </div>
+
+      <div className="flex flex-col items-center justify-center bg-white/40 rounded-2xl p-2 min-w-17.5">
+        <TrendingUp size={16} className="text-emerald-600 mb-1" />
+        <span className="text-lg font-black text-neutral-800 leading-none">4807<span className="text-xs">m</span></span>
+        <span className="text-[9px] font-bold text-neutral-600 uppercase tracking-wide mt-1">Record</span>
+      </div>
+
+      {/* NOUVEAU : Altitude totale / Dénivelé */}
+      <div className="flex flex-col items-center justify-center bg-white/40 rounded-2xl p-2 min-w-17.5">
+        <MountainSnow size={16} className="text-blue-500 mb-1" />
+        <span className="text-lg font-black text-neutral-800 leading-none">24<span className="text-xs">k m</span></span>
+        <span className="text-[9px] font-bold text-neutral-600 uppercase tracking-wide mt-1">Cumulé</span>
+      </div>
+
+    </div>
+  );
+}
+
+===== FILE: features/user/RecentAscensions.tsx =====
+import { Star, MapPin } from 'lucide-react';
+import { Ascension } from './userTypes';
+
+export default function RecentAscensions({ ascensions }: { ascensions: Ascension[] }) {
+  if (ascensions.length === 0) {
+    return (
+      <div className="bg-neutral-50 border border-neutral-200 border-dashed rounded-3xl p-10 text-center">
+        <MapPin size={32} className="mx-auto text-neutral-300 mb-3" />
+        <h3 className="text-lg font-bold text-neutral-700">Aucune ascension pour le moment</h3>
+        <p className="text-neutral-500 mt-1">Explorez la carte et marquez votre premier sommet !</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-neutral-200 shadow-sm rounded-3xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50/50">
+        <h2 className="font-bold text-neutral-800">Journal de bord</h2>
+      </div>
+      <div className="divide-y divide-neutral-100">
+        {ascensions.map((asc) => (
+          <div key={asc.id} className="p-6 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center hover:bg-neutral-50 transition-colors">
+            
+            <div className="flex items-center gap-4">
+              {/* La pastille de couleur personnalisée par l'utilisateur ! */}
+              <div className="w-4 h-12 rounded-full flex-shrink-0 shadow-inner" style={{ backgroundColor: asc.customColor }}></div>
+              <div>
+                <h3 className="font-bold text-lg text-neutral-900">{asc.summitName}</h3>
+                <p className="text-sm font-medium text-neutral-500">{asc.altitude}m • Fait le {new Date(asc.dateAscension).toLocaleDateString('fr-FR')}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col md:items-end gap-2 w-full md:w-auto">
+              {/* Affichage de la note */}
+              <div className="flex gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} size={16} className={i < asc.rating ? "text-amber-400 fill-amber-400" : "text-neutral-200"} />
+                ))}
+              </div>
+              {asc.comment && (
+                <p className="text-sm text-neutral-600 italic bg-white border border-neutral-100 px-3 py-2 rounded-xl">
+                  "{asc.comment}"
+                </p>
+              )}
+            </div>
+
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+===== FILE: features/user/userService.ts =====
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/shared/lib/firebase";
+import { Ascension } from "./userTypes";
+
+// Récupérer toutes les ascensions d'un utilisateur spécifique
+export async function getUserAscensions(userId: string) {
+  const q = query(collection(db, "ascensions"), where("userId", "==", userId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Ascension[];
+}
+
+===== FILE: features/user/userTypes.ts =====
+export interface Ascension {
+  id: string;          // Généré par Firebase
+  userId: string;      // L'ID du grimpeur
+  summitId: string;    // L'ID du sommet dans la base
+  
+  // On copie quelques infos de base pour éviter de faire 2 requêtes sur le dashboard
+  summitName: string;  
+  altitude: number;    
+
+  dateAscension: string; // Format YYYY-MM-DD
+  rating: number;        // Note sur 5
+  comment: string;       // Le commentaire public/privé
+  customColor: string;   // La couleur choisie pour la carte (ex: "#10b981")
+}
+
+export interface UserStats {
+  totalSummits: number;
+  totalAscent: number;   // Dénivelé / Altitude cumulée
+  maxAltitude: number;
+}
+
+
+===== FILE: shared/lib/AuthContext.tsx =====
+"use client";
+import { createContext, useContext, useEffect, useState } from "react";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { auth } from "./firebase";
+
+// On définit ce que notre contexte va partager
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+}
+
+const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Firebase nous avertit à chaque connexion/déconnexion
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, loading }}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
+}
+
+// Petit hook personnalisé pour utiliser l'auth facilement dans nos composants
+export const useAuth = () => useContext(AuthContext);
+
+===== FILE: shared/lib/data.ts =====
+// src/shared/lib/data.ts
+
+// On crée 3 faux sommets juste pour tester le rendu visuel de la carte
+export const sommetsDb = [
+  {
+    id: "1",
+    nom: "Mont Blanc",
+    massif: "Mont-Blanc",
+    altitude: 4807,
+    difficulte: "PD",
+    lat: 45.8326,
+    lng: 6.8652,
+    fait: true,
+    image: "https://images.unsplash.com/photo-1530878955558-a6c31cb70926?q=80&w=800&auto=format&fit=crop"
+  },
+  {
+    id: "2",
+    nom: "La Meije",
+    massif: "Écrins",
+    altitude: 3984,
+    difficulte: "D",
+    lat: 45.0022,
+    lng: 6.3083,
+    fait: false,
+    image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=800&auto=format&fit=crop"
+  },
+  {
+    id: "3",
+    nom: "Cervin",
+    massif: "Alpes valaisannes",
+    altitude: 4478,
+    difficulte: "AD",
+    lat: 45.9763,
+    lng: 7.6583,
+    fait: false,
+    image: "https://images.unsplash.com/photo-1549880338-65dd4bc8a202?q=80&w=800&auto=format&fit=crop"
+  }
+];
+
+===== FILE: shared/lib/firebase.ts =====
+// src/shared/lib/firebase.ts
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+
+// Ton objet de configuration (qui lit les variables d'environnement)
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+};
+
+// INITIALISATION SÉCURISÉE POUR NEXT.JS
+// Dans Next.js, le code peut être rechargé plusieurs fois (Hot Reload).
+// Cette condition évite l'erreur "Firebase App already exists".
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+// On exporte la base de données (Firestore) et l'authentification (Auth)
+export const db = getFirestore(app);
+export const auth = getAuth(app);
+
+===== FILE: shared/ui/Header.tsx =====
+"use client";
+import Link from "next/link";
+import { Mountain, LogOut } from 'lucide-react';
+import { useAuth } from "../lib/AuthContext";
+import { logoutUser } from "@/features/auth/authService";
+
+export default function Header() {
+  const { user } = useAuth(); // On récupère l'utilisateur connecté !
+
+  return (
+    <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-neutral-200 flex items-center justify-between px-6 z-50">
+      
+      {/* Gauche : Logo */}
+      <Link href="/" className="flex items-center gap-2 w-1/3 hover:opacity-80 transition-opacity">
+        <div className="bg-emerald-600 p-1.5 rounded-lg text-white shadow-sm">
+          <Mountain size={20} strokeWidth={2.5} />
+        </div>
+        <span className="font-bold text-xl tracking-tight text-neutral-900">Altis.</span>
+      </Link>
+
+      {/* Centre : Navigation */}
+      <nav className="flex items-center justify-center gap-8 w-1/3">
+        <Link href="/" className="text-sm font-bold text-emerald-600">Explorateur</Link>
+        {user && (
+          <Link href="/dashboard" className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Dashboard</Link>
+        )}
+      </nav>
+
+      {/* Droite : Profil / Auth */}
+      <div className="flex items-center justify-end gap-4 w-1/3">
+        {user ? (
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-bold text-neutral-400 hidden md:block">{user.email}</span>
+            <button 
+              onClick={() => logoutUser()} 
+              className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              title="Se déconnecter"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
+        ) : (
+          <Link href="/login" className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-bold rounded-xl transition-colors">
+            Connexion
+          </Link>
+        )}
+      </div>
+    </header>
+  );
+}

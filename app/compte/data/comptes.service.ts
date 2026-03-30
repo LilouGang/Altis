@@ -3,7 +3,7 @@ import {
   signInWithEmailAndPassword, 
   signOut 
 } from "firebase/auth";
-import { auth } from "@/shared/lib/firebase";
+import { auth } from "@/app/shared/lib/firebase";
 
 export async function registerUser(email: string, password: string) {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);

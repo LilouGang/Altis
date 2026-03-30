@@ -7,7 +7,7 @@ import { getUserAscensions } from "@/features/user/userService";
 
 // NOUVEAUX IMPORTS : Pour aller lire la table des drapeaux
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "@/shared/lib/firebase";
+import { db } from "@/app/shared/lib/firebase";
 
 export default function DashboardPage() {
   const [ascensions, setAscensions] = useState<Ascension[]>([]);

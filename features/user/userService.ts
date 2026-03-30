@@ -1,5 +1,5 @@
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/shared/lib/firebase";
+import { db } from "@/app/shared/lib/firebase";
 import { Ascension } from "./userTypes";
 
 // Récupérer toutes les ascensions d'un utilisateur spécifique

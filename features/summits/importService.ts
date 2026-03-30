@@ -1,5 +1,5 @@
 import { collection, writeBatch, doc } from "firebase/firestore";
-import { db } from "@/shared/lib/firebase";
+import { db } from "@/app/shared/lib/firebase";
 
 export async function importSommetsFromOSM() {
   // 1. La requête sur une seule ligne pour éviter les bugs d'encodage

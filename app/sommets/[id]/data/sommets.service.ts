@@ -1,6 +1,6 @@
 import { Sommet } from "./summitTypes";
 import { doc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, setDoc } from "firebase/firestore";
-import { db } from "@/shared/lib/firebase";
+import { db } from "@/app/shared/lib/firebase";
 import { Ascension } from "../user/userTypes";
 
 // Fonction pour ajouter un sommet dans la collection "sommets"

@@ -7,7 +7,7 @@ import { Plus, Minus, Compass, Mountain, Flag, TrendingUp, MountainSnow, MousePo
 import { getUserAscensions } from '../user/userService';
 import { Ascension } from '../user/userTypes';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/shared/lib/firebase';
+import { db } from '@/app/shared/lib/firebase';
 import { Sommet } from '../summits/summitTypes';
 
 export default function MapboxViewer() {
