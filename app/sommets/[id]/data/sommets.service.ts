@@ -1,7 +1,7 @@
-import { Sommet } from "./summitTypes";
+import { Sommet } from "../../../shared/types/index";
 import { doc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "@/app/shared/lib/firebase";
-import { Ascension } from "../user/userTypes";
+import { Ascension } from "../../../shared/types/index";
 
 // Fonction pour ajouter un sommet dans la collection "sommets"
 export async function addSummit(summitData: Omit<Sommet, 'id'>) {

@@ -1,5 +1,5 @@
 import { Star, MapPin } from 'lucide-react';
-import { Ascension } from './userTypes';
+import { Ascension } from '../../shared/types/index';
 
 export default function RecentAscensions({ ascensions }: { ascensions: Ascension[] }) {
   if (ascensions.length === 0) {
@@ -23,7 +23,7 @@ export default function RecentAscensions({ ascensions }: { ascensions: Ascension
             
             <div className="flex items-center gap-4">
               {/* La pastille de couleur personnalisée par l'utilisateur ! */}
-              <div className="w-4 h-12 rounded-full flex-shrink-0 shadow-inner" style={{ backgroundColor: asc.customColor }}></div>
+              <div className="w-4 h-12 rounded-full shrink-0 shadow-inner" style={{ backgroundColor: asc.customColor }}></div>
               <div>
                 <h3 className="font-bold text-lg text-neutral-900">{asc.summitName}</h3>
                 <p className="text-sm font-medium text-neutral-500">{asc.altitude}m • Fait le {new Date(asc.dateAscension).toLocaleDateString('fr-FR')}</p>

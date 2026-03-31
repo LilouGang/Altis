@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Mountain, LogOut } from 'lucide-react';
 import { useAuth } from "../lib/AuthContext";
-import { logoutUser } from "@/features/auth/authService";
+import { logoutUser } from "../../compte/data/comptes.service";
 
 export default function Header() {
   const { user } = useAuth(); // On récupère l'utilisateur connecté !

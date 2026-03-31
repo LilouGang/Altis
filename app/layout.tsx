@@ -1,5 +1,5 @@
-import Header from "@/shared/ui/Header";
-import { AuthProvider } from "@/shared/lib/AuthContext";
+import Header from "./shared/ui/Header";
+import { AuthProvider } from "./shared/lib/AuthContext";
 import "./globals.css";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

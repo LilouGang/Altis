@@ -17,7 +17,7 @@ export default function FormulaireAuth({
   isLogin, email, setEmail, password, setPassword, error, loading, handleSubmit, toggleMode
 }: FormulaireAuthProps) {
   return (
-    <div className="w-full max-w-md bg-white rounded-[2rem] border border-neutral-200 shadow-sm p-8">
+    <div className="w-full max-w-md bg-white rounded-4xl border border-neutral-200 shadow-sm p-8">
       <div className="flex flex-col items-center mb-8">
         <div className="bg-emerald-600 p-2.5 rounded-xl text-white shadow-sm mb-4">
           <Mountain size={28} strokeWidth={2.5} />
