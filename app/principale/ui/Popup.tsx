@@ -9,7 +9,7 @@ interface PopupProps {
 export default function PopupFiche({ sommet }: PopupProps) {
   return (
     <Link 
-      href={`/Sommets/${sommet.id}`} 
+      href={`/sommets/${sommet.id}`} 
       className="block w-85 p-2.5 bg-white rounded-2xl shadow-xl border border-neutral-200 hover:border-emerald-500 transition-colors group cursor-pointer relative"
     >
       <div className="absolute top-2.5 right-2.5 text-neutral-400 group-hover:text-emerald-500 transition-colors">
