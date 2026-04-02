@@ -7,6 +7,7 @@ interface BoutonsProps {
   onToggle3D: () => void;
   bearing: number;
   pitch: number;
+  is3D?: boolean;
 }
 
 export default function Boutons({ onZoomIn, onZoomOut, onResetNorth, onToggle3D, bearing, pitch }: BoutonsProps) {

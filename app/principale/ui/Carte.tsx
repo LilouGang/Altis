@@ -1,112 +1,131 @@
 "use client";
-import Map, { Source, Marker, Popup as MapboxPopup } from 'react-map-gl/mapbox'; 
+import Map, { Source, Layer, Popup as MapboxPopup } from 'react-map-gl/mapbox'; 
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { SommetCarte } from '../logic/principale.selectors';
 import { ViewState } from '../logic/principale.actions';
 import Boutons from './Boutons';
 import PopupFiche from './Popup';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 
 interface CarteProps {
   viewState: ViewState;
   setViewState: (viewState: any) => void;
-  sommets: SommetCarte[];
   popupInfo: SommetCarte | null;
   setPopupInfo: (sommet: SommetCarte | null) => void;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onResetNorth: () => void;
-  onToggle3D: () => void;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  onResetNorth?: () => void;
+  onToggle3D?: () => void;
 }
 
 export default function Carte({
-  viewState, setViewState, sommets, popupInfo, setPopupInfo,
-  onZoomIn, onZoomOut, onResetNorth, onToggle3D
+  viewState, setViewState, popupInfo, setPopupInfo
 }: CarteProps) {
+  
+  const mapRef = useRef<any>(null);
 
-  // NOUVEAU : La fonction qui intercepte les clics sur la carte
+  const handleZoomIn = () => mapRef.current?.flyTo({ zoom: viewState.zoom + 1, duration: 500 });
+  const handleZoomOut = () => mapRef.current?.flyTo({ zoom: viewState.zoom - 1, duration: 500 });
+  const handleResetNorth = () => mapRef.current?.easeTo({ bearing: 0, pitch: 0, duration: 700 });
+  const handleToggle3D = () => mapRef.current?.easeTo({ pitch: viewState.pitch === 0 ? 60 : 0, duration: 800 });
+
   const handleMapClick = useCallback((event: any) => {
-    // 1. On vérifie si l'utilisateur a cliqué sur un élément des couches interactives
     const feature = event.features && event.features[0];
 
-    if (feature) {
-      // 2. Mapbox nous donne les infos brutes de ce qu'on a cliqué !
-      const nom = feature.properties.name || feature.properties.name_fr;
-      const altitude = feature.properties.ele || feature.properties.elevation;
-      const lngLat = event.lngLat;
-
-      // 3. On crée un "Faux" sommet à la volée pour nourrir ton PopupFiche
-      const sommetCliqueNatifs: SommetCarte = {
-        // On génère un ID temporaire basé sur les coordonnées
-        id: `native_${lngLat.lat.toFixed(4)}_${lngLat.lng.toFixed(4)}`, 
-        nom: nom || "Sommet inconnu",
-        altitude: altitude ? Number(altitude) : 0,
-        coordonnees: { latitude: lngLat.lat, longitude: lngLat.lng },
-        pays: [], // À déduire plus tard ou à demander à l'utilisateur
-        massif_principal: "Inconnu", 
-        markerColor: "#3b82f6" // Bleu par défaut pour l'interface
-      };
-
-      // 4. On ouvre le popup !
-      setPopupInfo(sommetCliqueNatifs);
-    } else {
-      // Si on clique dans le vide, on ferme le popup
+    if (!feature || feature.layer.id !== 'sommets-layer') {
       setPopupInfo(null);
+      return;
     }
-  }, [setPopupInfo]);
 
-  // NOUVEAU : Change le curseur en "pointer" 👆 si on survole une montagne
-  const onMouseEnter = useCallback(() => (document.body.style.cursor = 'pointer'), []);
-  const onMouseLeave = useCallback(() => (document.body.style.cursor = 'default'), []);
+    const props = feature.properties;
+      
+    const sommetClique: SommetCarte = {
+      id: props.id,
+      nom: props.nom_fr || props.nom_officiel || 'Sommet inconnu',
+      altitude: props.altitude ? Number(props.altitude) : 0,
+      prominence: props.prominence ? Number(props.prominence) : undefined,
+      massif_principal: props.massif,
+      pays: props.pays,
+      image_couverture_url: props.image_url,
+      coordonnees: {
+        longitude: feature.geometry.coordinates[0],
+        latitude: feature.geometry.coordinates[1]
+      }
+    };
+
+    setPopupInfo(sommetClique);
+
+    mapRef.current?.flyTo({
+      center: feature.geometry.coordinates,
+      zoom: Math.max(viewState.zoom, 11),
+      duration: 600
+    });
+
+  }, [setPopupInfo, viewState.zoom]);
+
+  const onMouseEnter = useCallback((e: any) => { e.target.getCanvas().style.cursor = 'pointer'; }, []);
+  const onMouseLeave = useCallback((e: any) => { e.target.getCanvas().style.cursor = ''; }, []);
 
   return (
-    <section className="w-full h-full relative z-0">
-      <Map
-        {...viewState}
-        onMove={evt => setViewState(evt.viewState)}
-        mapStyle="mapbox://styles/lilougang/cmngafjby006t01s74kuldauy"
-        mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
-        terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
-        interactiveLayerIds={['poi-label', 'natural-point-label']} // Les couches Mapbox cliquables
-        onClick={handleMapClick}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
+    <Map
+      ref={mapRef}
+      {...viewState}
+      onMove={evt => setViewState(evt.viewState)}
+      mapStyle="mapbox://styles/mapbox/outdoors-v12"
+      interactiveLayerIds={['sommets-layer']}
+      onClick={handleMapClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
+    >
+      <Source id="mapbox-dem" type="raster-dem" url="mapbox://mapbox.mapbox-terrain-dem-v1" tileSize={512} maxzoom={14} />
+
+      {/* ON CHANGE LE TYPE DE SOURCE ET L'URL */}
+      <Source 
+        id="sommets-source" 
+        type="vector" 
+        url="mapbox://lilougang.a3my8flj" // <-- Remplace par ton Tileset ID
       >
-        <Source id="mapbox-dem" type="raster-dem" url="mapbox://mapbox.mapbox-terrain-dem-v1" tileSize={512} maxzoom={14} />
-
-        {/* MARQUEURS */}
-        {sommets.map((sommet) => (
-          <Marker key={sommet.id} longitude={sommet.coordonnees.longitude} latitude={sommet.coordonnees.latitude} anchor="bottom">
-            <div 
-              onClick={(e) => {
-                e.stopPropagation();
-                setPopupInfo(sommet);
-              }} 
-              style={{ backgroundColor: sommet.markerColor }}
-              className="cursor-pointer relative z-10 h-5 w-5 rounded-full border-[2.5px] border-white shadow-md hover:scale-125 transition-transform"
-            />
-          </Marker>
-        ))}
-
-        {/* POPUP MAPBOX */}
-        {popupInfo && (
-          <MapboxPopup 
-            longitude={popupInfo.coordonnees.longitude} 
-            latitude={popupInfo.coordonnees.latitude} 
-            anchor="bottom" offset={[-50, -15]} closeButton={false} 
-            className="altis-popup z-20"
-          >
-            <PopupFiche sommet={popupInfo} />
-          </MapboxPopup>
-        )}
-
-        {/* BOUTONS DE CONTRÔLES */}
-        <Boutons 
-          onZoomIn={onZoomIn} onZoomOut={onZoomOut} 
-          onResetNorth={onResetNorth} onToggle3D={onToggle3D} 
-          bearing={viewState.bearing} pitch={viewState.pitch} 
+        <Layer 
+          id="sommets-layer"
+          type="circle"
+          source-layer="sommets" // <-- OBLIGATOIRE en "vector", met le nom vu dans Studio (ex: "sommets")
+          paint={{
+            'circle-color': '#3b82f6',
+            'circle-radius': [
+              'interpolate', ['linear'], ['zoom'],
+              2, ['case', ['>=', ['to-number', ['get', 'altitude'], 0], 4000], 3, 0],
+              5, ['case', ['>=', ['to-number', ['get', 'altitude'], 0], 2500], 4, 0],
+              8, ['case', ['>=', ['to-number', ['get', 'altitude'], 0], 1000], 5, 0],
+              11, ['case', ['>=', ['to-number', ['get', 'altitude'], 0], 500], 5, 2],
+              13, 6 
+            ],
+            'circle-stroke-width': ['step', ['zoom'], 0, 10, 1.5], 
+            'circle-stroke-color': '#ffffff'
+          }}
         />
-      </Map>
-    </section>
+      </Source>
+
+      {popupInfo && (
+        <MapboxPopup 
+          longitude={popupInfo.coordonnees.longitude} 
+          latitude={popupInfo.coordonnees.latitude} 
+          anchor="bottom" offset={[-50, -15]} closeButton={false} 
+          className="altis-popup z-20"
+        >
+          <PopupFiche sommet={popupInfo} />
+        </MapboxPopup>
+      )}
+
+      <Boutons 
+        onZoomIn={handleZoomIn} 
+        onZoomOut={handleZoomOut} 
+        onResetNorth={handleResetNorth} 
+        onToggle3D={handleToggle3D} 
+        is3D={viewState.pitch > 0}
+        bearing={viewState.bearing}
+        pitch={viewState.pitch}
+      />
+    </Map>
   );
 }
