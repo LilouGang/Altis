@@ -1,17 +1,17 @@
 "use client";
-
 import Carte from "./principale/ui/Carte";
-import MapFilters from "./principale/ui/Filtre";
 import QuickStats from "./principale/ui/MiniStats";
 import FloatingSearch from "./principale/ui/Recherche";
 import { usePrincipale } from "./principale/logic/principale.hook";
 
-export default function Home() {
+export default function PrincipalePage() {
   const { 
     viewState, setViewState, 
     popupInfo, setPopupInfo,
-    handleZoomIn, handleZoomOut, handleResetNorth, handleToggle3D,
-    userStats // <-- 1. ON RÉCUPÈRE LES STATS ICI
+    userStats,
+    handleSelectSearchResult,
+    mesSommets,
+    handleAddSummitToProfile
   } = usePrincipale();
 
   return (
@@ -22,19 +22,18 @@ export default function Home() {
         setViewState={setViewState}
         popupInfo={popupInfo}
         setPopupInfo={setPopupInfo}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onResetNorth={handleResetNorth}
-        onToggle3D={handleToggle3D}
+        mesSommets={mesSommets}
+        onAddSummit={handleAddSummitToProfile}
       />
       
       <div className="pointer-events-none absolute inset-0 z-40 *:pointer-events-auto">
-        <MapFilters />
         
-        {/* 2. ON PASSE LES STATS AU COMPOSANT ICI */}
-        <QuickStats stats={userStats} />
+        {/* ✅ On affiche les statistiques en haut à droite */}
+        <QuickStats sommets={mesSommets} />
         
-        <FloatingSearch />
+        {/* ✅ La barre de recherche en bas */}
+        <FloatingSearch onSelectSommet={handleSelectSearchResult} />
+
       </div>
 
     </div>

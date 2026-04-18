@@ -2,13 +2,18 @@ export interface SommetCarte {
   id: string;
   nom: string;
   altitude: number;
-  prominence?: number;
-  massif_principal?: string;
-  pays?: string;
+  pays: string;
   image_couverture_url?: string;
-  markerColor?: string;
   coordonnees: {
     longitude: number;
     latitude: number;
   };
+  
+  // 📖 NOUVELLES PROPRIÉTÉS DU CARNET DE BORD (Optionnelles)
+  statut?: 'fait' | 'a_faire';
+  couleur?: string;
+  note?: number | null;
+  commentaire?: string;
+  dateAjout?: string;
+  userId?: string;
 }

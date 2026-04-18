@@ -3,6 +3,7 @@ import { Sommet, Ascension } from "../../../shared/types";
 import { getSummitById, getSummitAscensions, getMarkerColor } from "../data/sommets.service";
 import { calculateSummitStats, sortAscensions } from "./sommets.selectors";
 import { submitAscensionData, updateMarkerColor } from "./sommets.actions";
+import { incrementSummitView } from '../../../principale/data/principale.service';
 
 export function useSommets(summitId: string) {
   const [sommet, setSommet] = useState<Sommet | null>(null);
@@ -25,7 +26,13 @@ export function useSommets(summitId: string) {
   useEffect(() => {
     async function fetchData() {
       if (!summitId) return;
+
+      // NOUVEAU : On lance l'incrémentation de la vue en tâche de fond (Fire and Forget)
+      // Le .catch permet juste d'éviter une erreur silencieuse si l'utilisateur perd sa connexion
+      incrementSummitView(summitId).catch(console.error);
+
       try {
+        // Le reste de ton code ne change pas et charge les données vitales à l'affichage
         const [summitData, ascensionsData, colorData] = await Promise.all([
           getSummitById(summitId),
           getSummitAscensions(summitId),
