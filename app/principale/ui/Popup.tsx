@@ -1,76 +1,88 @@
 "use client";
-import { Plus, Check, ChevronRight, Mountain } from 'lucide-react';
+import { MousePointerClick, PlusCircle, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { SommetCarte } from '../logic/principale.selectors';
 
-interface PopupFicheProps {
+interface PopupProps {
   sommet: SommetCarte;
-  dejaEnregistre: boolean;
-  onAdd: () => void;
+  dejaEnregistre?: boolean;
+  onAdd?: () => void;
 }
 
-export default function PopupFiche({ sommet, dejaEnregistre, onAdd }: PopupFicheProps) {
+export default function PopupFiche({ sommet, dejaEnregistre = false, onAdd }: PopupProps) {
   const router = useRouter();
+  const imageUrl = sommet.image_couverture_url || 'https://images.unsplash.com/photo-1549880338-65dd4bc8a202?q=80&w=200';
+  const cleanId = sommet.id.replace('peak_', '');
 
-  // 🚀 REDIRECTION VERS LA PAGE DU SOMMET
-  const handleCardClick = () => {
-    // On redirige vers la future page du sommet
-    router.push(`/sommet/${sommet.id}`);
+  // 📦 On prépare les données pour les envoyer dans l'URL
+  const handleNavigation = () => {
+    const dataString = encodeURIComponent(JSON.stringify(sommet));
+    router.push(`/sommet/${cleanId}?data=${dataString}`);
   };
 
-  // 🛑 AJOUT SANS REDIRECTION
   const handleAddClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // 👈 MAGIE : Empêche le clic de se propager à la carte entière !
-    if (!dejaEnregistre) {
-      onAdd();
-    }
+    e.stopPropagation(); // Empêche d'ouvrir la page si on clique sur le bouton
+    if (onAdd && !dejaEnregistre) onAdd();
   };
+
+  const ContenuVisuel = (
+    <div className="flex gap-3 items-center">
+      <div 
+        className="w-14 h-14 rounded-xl bg-neutral-100 shrink-0" 
+        style={{ backgroundImage: `url(${imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+      />
+      <div className="flex flex-col grow overflow-hidden pr-3">
+        <h3 className="font-bold text-neutral-900 text-sm leading-tight mb-1.5 truncate transition-colors group-hover:text-blue-600">
+          {sommet.nom || 'Sommet inconnu'}
+        </h3>
+        <div className="flex gap-4">
+          <div className="flex flex-col">
+            <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">Alti.</span>
+            <span className="text-xs font-semibold text-neutral-800">
+              {sommet.altitude ? `${sommet.altitude} m` : 'Inconnue'}
+            </span>
+          </div>
+          <div className="flex flex-col overflow-hidden border-l border-neutral-100 pl-4">
+            <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">Pays</span>
+            <span className="text-xs font-semibold text-neutral-800 truncate w-full">
+              {sommet.pays || 'Inconnu'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div 
-      onClick={handleCardClick}
-      className="bg-white/95 backdrop-blur-xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl p-4 w-[240px] flex flex-col gap-3 cursor-pointer group transition-all hover:bg-white hover:shadow-[0_8px_30px_rgb(0,0,0,0.16)] active:scale-[0.98]"
+      onClick={handleNavigation}
+      className={`block w-85 p-2.5 bg-white rounded-2xl shadow-xl border transition-all group cursor-pointer relative ${
+        dejaEnregistre ? 'border-emerald-100 hover:border-emerald-500' : 'border-neutral-200 hover:border-blue-500'
+      }`}
     >
-      {/* HEADER : Nom + Chevron */}
-      <div className="flex justify-between items-start gap-2">
-        <div className="flex-1 overflow-hidden">
-          <h3 className="font-bold text-neutral-800 text-base leading-tight truncate group-hover:text-emerald-600 transition-colors">
-            {sommet.nom}
-          </h3>
-          <p className="text-xs font-semibold text-neutral-500 mt-0.5 truncate">
-            {sommet.pays || "Pays inconnu"}
-          </p>
-        </div>
-        {/* Le petit logo de clic qui glisse au survol */}
-        <div className="text-neutral-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all">
-          <ChevronRight size={18} strokeWidth={2.5} />
-        </div>
+      <div className={`absolute top-2.5 right-2.5 transition-colors ${dejaEnregistre ? 'text-emerald-500' : 'text-neutral-300 group-hover:text-blue-500'}`}>
+        <MousePointerClick size={14} />
       </div>
 
-      {/* STATS RAPIDES */}
-      <div className="flex items-center gap-1.5 bg-neutral-100/80 rounded-xl px-2.5 py-1.5 w-fit">
-        <Mountain size={12} className="text-neutral-500" />
-        <span className="text-xs font-bold text-neutral-700">{sommet.altitude} m</span>
-      </div>
-
-      {/* BOUTON D'ACTION (Ajouter ou Fait) */}
+      {ContenuVisuel}
+      
       <button 
         onClick={handleAddClick}
         disabled={dejaEnregistre}
-        className={`w-full py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+        className={`mt-3 w-full py-2 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all relative z-10 ${
           dejaEnregistre 
-            ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 cursor-default' 
-            : 'bg-neutral-800 text-white hover:bg-emerald-500 hover:shadow-md active:scale-95'
+            ? 'bg-emerald-500 text-white cursor-default' 
+            : 'bg-blue-50 hover:bg-blue-100 text-blue-600'
         }`}
       >
         {dejaEnregistre ? (
           <>
             <Check size={16} strokeWidth={3} />
-            Dans le carnet
+            Déjà dans le carnet
           </>
         ) : (
           <>
-            <Plus size={16} strokeWidth={2.5} />
+            <PlusCircle size={16} />
             Ajouter au carnet
           </>
         )}
