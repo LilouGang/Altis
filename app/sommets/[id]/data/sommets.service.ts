@@ -1,57 +1,35 @@
-import { Sommet } from "../../../shared/types/index";
-import { doc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, setDoc } from "firebase/firestore";
 import { db } from "@/app/shared/lib/firebase";
-import { Ascension } from "../../../shared/types/index";
+import { SommetCarte } from "../../../principale/logic/principale.selectors";
 
-// Fonction pour ajouter un sommet dans la collection "sommets"
-export async function addSummit(summitData: Omit<Sommet, 'id'>) {
-  try {
-    // addDoc génère automatiquement un ID unique sur Firebase
-    const docRef = await addDoc(collection(db, "sommets"), summitData);
-    console.log("Sommet ajouté avec l'ID: ", docRef.id);
-    return docRef.id;
-  } catch (e) {
-    console.error("Erreur lors de l'ajout du sommet: ", e);
-    throw e;
-  }
-}
-
-// 1. Récupérer un sommet
-export async function getSummitById(id: string) {
-  const docRef = doc(db, "sommets", id);
+// 1. Chercher si LE sommet est dans MON carnet
+export async function getSummitFromCarnet(userId: string, summitId: string) {
+  const docRef = doc(db, "user_summits", `${userId}_${summitId}`);
   const docSnap = await getDoc(docRef);
-  if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() } as any;
-  throw new Error("Sommet introuvable");
+  return docSnap.exists() ? (docSnap.data() as SommetCarte) : null;
 }
 
-// 2. Ajouter une ascension (fonctionnelle)
-export async function addAscension(ascensionData: Omit<Ascension, 'id'>) {
-  const docRef = await addDoc(collection(db, "ascensions"), ascensionData);
-  return docRef.id;
-}
-
-// 3. NOUVEAU : Récupérer toutes les ascensions/commentaires pour UN sommet
-export async function getSummitAscensions(summitId: string) {
-  const q = query(collection(db, "ascensions"), where("summitId", "==", summitId));
+// 2. Chercher les avis de TOUTE la communauté pour ce sommet
+export async function getCommunityReviews(summitId: string) {
+  const q = query(collection(db, "user_summits"), where("id", "==", summitId));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Ascension[];
+  return snapshot.docs.map(doc => doc.data() as SommetCarte);
 }
 
-export async function updateAscension(id: string, data: Partial<Ascension>) {
-  const docRef = doc(db, "ascensions", id);
-  await updateDoc(docRef, data);
-}
+// 3. 🪄 MAGIE : Récupérer Description + Image sur Wikipédia
+export async function fetchWikipediaData(nomSommet: string) {
+  try {
+    // On cherche sur le Wikipédia français
+    const url = `https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(nomSommet)}`;
+    const response = await fetch(url);
+    const data = await response.json();
 
-export async function saveMarkerColor(userId: string, summitId: string, color: string) {
-  // On crée un ID unique combinant l'utilisateur et le sommet
-  const docRef = doc(db, "user_markers", `${userId}_${summitId}`);
-  // { merge: true } permet de créer le document s'il n'existe pas, ou de le mettre à jour
-  await setDoc(docRef, { userId, summitId, color }, { merge: true });
-}
-
-// 6. NOUVEAU : Récupérer la couleur du drapeau
-export async function getMarkerColor(userId: string, summitId: string) {
-  const docRef = doc(db, "user_markers", `${userId}_${summitId}`);
-  const snap = await getDoc(docRef);
-  return snap.exists() ? snap.data().color : "#3b82f6"; // Bleu par défaut si aucune couleur choisie
+    return {
+      description: data.extract || "Aucune description disponible pour ce sommet.",
+      image_wiki: data.originalimage?.source || null,
+      description_short: data.description || ""
+    };
+  } catch (error) {
+    return { description: "", image_wiki: null, description_short: "" };
+  }
 }

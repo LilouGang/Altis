@@ -28,10 +28,9 @@ export default function SommetsPage() {
         </div>
 
         {/* 1. Bloc d'en-tête (Détails du sommet) */}
-        <Details 
+       <Details 
           sommet={logic.sommet} 
-          markerColor={logic.markerColor} 
-          onColorChange={logic.handleColorChange} 
+          wiki={logic.wikiData || { description: "Chargement...", image: "" }}
         />
 
         {/* 2. Bloc d'enregistrement (Formulaire) */}

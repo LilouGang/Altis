@@ -49,7 +49,7 @@ export default function QuickStats({ sommets = [] }: QuickStatsProps) {
 
   if (sommets.length === 0) {
     return (
-      <div className="absolute top-[80px] right-4 z-50 pointer-events-auto">
+      <div className="absolute top-20 right-4 z-50 pointer-events-auto">
         <div className="bg-white/80 backdrop-blur-md border border-neutral-200/50 shadow-sm rounded-2xl w-36 h-12 flex justify-center items-center gap-2">
           <MapPin size={16} className="text-neutral-400" />
           <div className="text-xs font-medium text-neutral-500">Carnet vide</div>
@@ -60,7 +60,7 @@ export default function QuickStats({ sommets = [] }: QuickStatsProps) {
 
   return (
     <div 
-      className="absolute top-[80px] right-4 z-50 pointer-events-auto select-none cursor-pointer" 
+      className="absolute top-20 right-4 z-50 pointer-events-auto select-none cursor-pointer" 
       onClick={nextSlide}
     >
       {/* 🌟 WIDGET À TAILLE FIXE : w-36 (144px) et h-24 (96px) pour une symétrie parfaite */}
