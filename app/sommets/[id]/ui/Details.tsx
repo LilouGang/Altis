@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import Map from 'react-map-gl/mapbox';
+import Map, { Source } from 'react-map-gl/mapbox';
 import { ChevronLeft, ChevronRight, Mountain, MapPin, Info } from "lucide-react";
 import { SommetCarte } from "../../../principale/logic/principale.selectors";
 
@@ -13,15 +13,16 @@ export default function Details({ sommet, wiki }: DetailsProps) {
   const [activeTab, setActiveTab] = useState<'3d' | 'photo'>('3d');
   const mapRef = useRef<any>(null);
   
-  // 🔍 On vérifie si une image existe
   const hasImage = !!(wiki?.image || sommet?.image_couverture_url);
 
+  // 🎡 CONFIGURATION DE LA ROTATION
   useEffect(() => {
     let animationFrame: number;
     const rotate = () => {
       if (mapRef.current && activeTab === '3d') {
         const map = mapRef.current.getMap();
-        map.setBearing((map.getBearing() + 0.15) % 360);
+        // Vitesse réglée à 0.05 comme demandé
+        map.setBearing((map.getBearing() + 0.05) % 360);
       }
       animationFrame = requestAnimationFrame(rotate);
     };
@@ -32,22 +33,31 @@ export default function Details({ sommet, wiki }: DetailsProps) {
   return (
     <div className="bg-white rounded-[40px] border border-neutral-200 shadow-sm overflow-hidden mb-8">
       <div className="h-112.5 w-full relative bg-neutral-100">
+        
         {activeTab === '3d' || !hasImage ? (
           <Map
             ref={mapRef}
             initialViewState={{
               longitude: sommet.coordonnees.longitude,
               latitude: sommet.coordonnees.latitude,
-              zoom: 13.5,
-              pitch: 65,
+              zoom: 15,
+              pitch: 80,
               bearing: 0
             }}
             style={{ width: '100%', height: '100%' }}
             mapStyle="mapbox://styles/mapbox/outdoors-v12"
             mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
-            terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
+            terrain={{ source: 'mapbox-dem', exaggeration: 1 }}
             interactive={false}
-          />
+          >
+            {/* 🏔️ LA SOURCE MANQUANTE : Elle permet d'activer le relief */}
+            <Source
+              id="mapbox-dem"
+              type="raster-dem"
+              url="mapbox://mapbox.mapbox-terrain-dem-v1"
+              tileSize={512}
+            />
+          </Map>
         ) : (
           <div 
             className="w-full h-full animate-in fade-in duration-500"
@@ -55,7 +65,6 @@ export default function Details({ sommet, wiki }: DetailsProps) {
           />
         )}
 
-        {/* 🔘 BOUTONS ET INDICATEURS : Seulement si on a une image */}
         {hasImage && (
           <>
             <button onClick={() => setActiveTab(activeTab === '3d' ? 'photo' : '3d')} className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-md hover:bg-white/40 text-white rounded-full flex items-center justify-center transition-all">
