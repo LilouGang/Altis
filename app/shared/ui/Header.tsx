@@ -5,12 +5,11 @@ import { useAuth } from "../lib/AuthContext";
 import { logoutUser } from "../../compte/data/comptes.service";
 
 export default function Header() {
-  const { user } = useAuth(); // On récupère l'utilisateur connecté !
+  const { user } = useAuth();
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-neutral-200 flex items-center justify-between px-6 z-50">
       
-      {/* Gauche : Logo */}
       <Link href="/" className="flex items-center gap-2 w-1/3 hover:opacity-80 transition-opacity">
         <div className="bg-emerald-600 p-1.5 rounded-lg text-white shadow-sm">
           <Mountain size={20} strokeWidth={2.5} />
@@ -18,7 +17,6 @@ export default function Header() {
         <span className="font-bold text-xl tracking-tight text-neutral-900">Altis.</span>
       </Link>
 
-      {/* Centre : Navigation */}
       <nav className="flex items-center justify-center gap-8 w-1/3">
         <Link href="/" className="text-sm font-bold text-emerald-600">Explorateur</Link>
         {user && (
@@ -26,7 +24,6 @@ export default function Header() {
         )}
       </nav>
 
-      {/* Droite : Profil / Auth */}
       <div className="flex items-center justify-end gap-4 w-1/3">
         {user ? (
           <div className="flex items-center gap-4">

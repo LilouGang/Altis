@@ -1,6 +1,5 @@
 import { Mountain } from "lucide-react";
 
-// On définit ce que l'UI attend comme données pour fonctionner
 interface FormulaireAuthProps {
   isLogin: boolean;
   email: string;

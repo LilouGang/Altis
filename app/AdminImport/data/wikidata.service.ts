@@ -1,6 +1,3 @@
-// --- FONCTIONS DE NETTOYAGE (FORMATTERS) ---
-
-// 1. Force les majuscules sur les mots importants
 const formatNom = (str: string) => {
   if (!str) return "Inconnu";
   return str.replace(/\b(mont|aiguille|dôme|pic|pointe|tête|tour|grand|petit|rocher)\b/gi, (match) => {
@@ -8,16 +5,11 @@ const formatNom = (str: string) => {
   });
 };
 
-// 2. Enlève les préfixes des massifs
 const formatMassif = (str: string) => {
   if (!str) return "Inconnu";
-  // Enlève "massif du ", "chaîne de ", "les ", etc. (insensible à la casse grâce au 'i')
   const cleaned = str.replace(/^(massif|chaîne|groupe|les|le|la)\s+(d[eu'es]*\s*)?/gi, "").trim();
-  // On met une majuscule à la première lettre du résultat
   return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 };
-
-// --- LE SCRIPT D'IMPORT ---
 
 export async function fetchWikidataTest() {
   const sparqlQuery = `
@@ -59,11 +51,9 @@ export async function fetchWikidataTest() {
   results.forEach((item: any) => {
     const wikidataId = item.sommet.value;
     
-    // Le nom par défaut de l'élément
     const labelBase = item.sommetLabel?.value;
-    if (!labelBase || labelBase.match(/^Q\d+$/)) return; // On ignore les erreurs Wikidata
+    if (!labelBase || labelBase.match(/^Q\d+$/)) return;
 
-    // Logique de langue : Nom Local en priorité, Nom Français s'il existe
     const nomOriginal = item.nomNatif?.value || labelBase;
     const nomFrancais = item.nomFR?.value || nomOriginal;
     const pays = item.paysLabel?.value;
@@ -79,7 +69,6 @@ export async function fetchWikidataTest() {
 
       sommetsMap.set(wikidataId, {
         wikidata_id: wikidataId.split('/').pop(),
-        // ON APPLIQUE NOS FONCTIONS DE NETTOYAGE ICI 👇
         nom_officiel: formatNom(nomOriginal), 
         nom_fr: formatNom(nomFrancais),
         altitude: item.altitude ? Number(item.altitude.value) : null,

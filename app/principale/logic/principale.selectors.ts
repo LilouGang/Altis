@@ -8,8 +8,6 @@ export interface SommetCarte {
     longitude: number;
     latitude: number;
   };
-  
-  // 📖 NOUVELLES PROPRIÉTÉS DU CARNET DE BORD (Optionnelles)
   statut?: 'fait' | 'a_faire';
   couleur?: string;
   note?: number | null;

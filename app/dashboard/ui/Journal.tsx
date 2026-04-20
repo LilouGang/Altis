@@ -17,13 +17,11 @@ export default function RecentAscensions({ carnet }: { carnet: SommetCarte[] }) 
       <h2 className="font-bold text-neutral-800 text-lg mb-2 px-2">Dernières ascensions</h2>
       
       {carnet.map((asc) => {
-        // Formatage d'une date lisible ("12 mai 2026")
         const dateStr = asc.dateAjout ? new Date(asc.dateAjout).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Date inconnue';
 
         return (
           <div key={asc.id} className="relative bg-white p-5 rounded-3xl border border-neutral-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:shadow-md group">
             
-            {/* Ligne de couleur personnalisée, beaucoup plus discrète */}
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1/2 rounded-r-full" style={{ backgroundColor: asc.couleur || '#10b981' }} />
             
             <div className="pl-3 flex flex-col">

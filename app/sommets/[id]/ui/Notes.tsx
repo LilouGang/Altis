@@ -40,7 +40,6 @@ export default function Notes({ stats, sortedAscensions, sortBy, setSortBy }: No
             <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-2">{stats.total} avis</p>
           </div>
 
-          {/* Colonne Liste */}
           <div className="md:col-span-8">
             <div className="flex justify-between items-center mb-6">
               <span className="text-sm font-bold text-neutral-900">Récits</span>

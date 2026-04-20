@@ -3,7 +3,6 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "./firebase";
 
-// On définit ce que notre contexte va partager
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -16,7 +15,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Firebase nous avertit à chaque connexion/déconnexion
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
@@ -31,5 +29,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Petit hook personnalisé pour utiliser l'auth facilement dans nos composants
 export const useAuth = () => useContext(AuthContext);

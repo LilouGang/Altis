@@ -23,7 +23,6 @@ export default function Carte({
   const mapRef = useRef<any>(null);
   const [userCoords, setUserCoords] = useState<[number, number] | null>(null);
 
-  // 1. 📍 POINT BLEU GPS : Récupère la position en temps réel
   useEffect(() => {
     if ("geolocation" in navigator) {
       const watchId = navigator.geolocation.watchPosition((pos) => {
@@ -33,13 +32,10 @@ export default function Carte({
     }
   }, []);
 
-  // 2. 🎮 BOUTONS SMOOTH : On force le flyTo/easeTo interne
   const handleZoomIn = () => mapRef.current?.flyTo({ zoom: viewState.zoom + 1, duration: 400 });
   const handleZoomOut = () => mapRef.current?.flyTo({ zoom: viewState.zoom - 1, duration: 400 });
   const handleResetNorth = () => mapRef.current?.easeTo({ bearing: 0, duration: 800 });
   const handleToggle3D = () => mapRef.current?.easeTo({ pitch: viewState.pitch === 0 ? 60 : 0, duration: 800 });
-
-  // 3. 🖱️ CLIC SUR UN SOMMET : Pour ouvrir la fiche
   const handleMapClick = useCallback((event: any) => {
     const feature = event.features && event.features[0];
     
@@ -71,7 +67,6 @@ export default function Carte({
   const onMouseEnter = useCallback((e: any) => { e.target.getCanvas().style.cursor = 'pointer'; }, []);
   const onMouseLeave = useCallback((e: any) => { e.target.getCanvas().style.cursor = ''; }, []);
 
-  // 4. 🚁 ANIMATION DE RECHERCHE : Vole vers le sommet tapé dans la barre
   useEffect(() => {
     if (popupInfo && mapRef.current) {
       mapRef.current.flyTo({
@@ -83,7 +78,6 @@ export default function Carte({
     }
   }, [popupInfo]);
 
-  // 5. 🔄 FORMATAGE GEOJSON
   const geojsonSommets = useMemo(() => ({
     type: 'FeatureCollection',
     features: (mesSommets || []).map(s => ({
@@ -109,7 +103,6 @@ export default function Carte({
       >
         <Source id="mapbox-dem" type="raster-dem" url="mapbox://mapbox.mapbox-terrain-dem-v1" tileSize={512} />
 
-        {/* 🔵 POINT BLEU GPS (Utilisateur) */}
         {userCoords && (
           <Source id="user-pos" type="geojson" data={{
             type: 'Feature',
@@ -131,7 +124,6 @@ export default function Carte({
           </Source>
         )}
 
-        {/* 🏔️ TES SOMMETS (Vert Émeraude) */}
         <Source id="mes-sommets-source" type="geojson" data={geojsonSommets as any}>
           <Layer id="mes-sommets-layer" type="circle" paint={{
             'circle-color': '#10b981', 

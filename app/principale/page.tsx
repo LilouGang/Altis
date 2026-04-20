@@ -28,10 +28,7 @@ export default function PrincipalePage() {
       
       <div className="pointer-events-none absolute inset-0 z-40 *:pointer-events-auto">
         
-        {/* ✅ On affiche les statistiques en haut à droite */}
-       <QuickStats sommets={mesSommets} />
-        
-        {/* ✅ La barre de recherche en bas */}
+        <QuickStats sommets={mesSommets} />
         <FloatingSearch onSelectSommet={handleSelectSearchResult} />
 
       </div>

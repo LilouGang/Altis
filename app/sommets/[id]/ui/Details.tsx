@@ -1,9 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Map, { Source } from 'react-map-gl/mapbox';
-// 🎨 1. LE CORRECTIF CSS EST ICI :
 import 'mapbox-gl/dist/mapbox-gl.css'; 
-
 import { ChevronLeft, ChevronRight, Mountain, MapPin, Info } from "lucide-react";
 import { SommetCarte } from "../../../principale/logic/principale.selectors";
 
@@ -14,7 +12,6 @@ interface DetailsProps {
 
 export default function Details({ sommet, wiki }: DetailsProps) {
   const [activeTab, setActiveTab] = useState<'3d' | 'photo'>('3d');
-  // ⏱️ 2. NOUVEL ÉTAT : On piste si la carte a fini de charger
   const [mapLoaded, setMapLoaded] = useState(false); 
   const mapRef = useRef<any>(null);
   
@@ -25,8 +22,6 @@ export default function Details({ sommet, wiki }: DetailsProps) {
     const rotate = () => {
       if (mapRef.current && activeTab === '3d' && mapLoaded) {
         const map = mapRef.current.getMap();
-        
-        // 🔒 LE SECRET EST ICI : On force le centre à CHAQUE frame
         map.jumpTo({
           center: [sommet.coordonnees.longitude, sommet.coordonnees.latitude],
           bearing: (map.getBearing() + 0.05) % 360
@@ -49,7 +44,6 @@ export default function Details({ sommet, wiki }: DetailsProps) {
         {activeTab === '3d' || !hasImage ? (
           <Map
             ref={mapRef}
-            // 🚀 3. ON DÉCLENCHE LE BOOLEAN QUAND TOUT EST PRÊT
             onLoad={() => setMapLoaded(true)} 
             initialViewState={{
               longitude: sommet.coordonnees.longitude,

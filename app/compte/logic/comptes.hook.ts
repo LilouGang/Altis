@@ -17,7 +17,7 @@ export function useComptes() {
 
     try {
       await submitAuth(isLogin, email, password);
-      router.push("/"); // Redirection vers la carte après succès
+      router.push("/");
     } catch (err: any) {
       setError("Erreur : Identifiants incorrects ou mot de passe trop faible.");
     } finally {

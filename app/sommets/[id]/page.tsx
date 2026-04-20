@@ -2,8 +2,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useParams } from "next/navigation";
-
-// Regarde ici : les imports sont beaucoup plus propres maintenant !
 import { useSommets } from "./logic/sommets.hook";
 import Details from "./ui/Details";
 import Enregistrement from "./ui/Enregistrement";
@@ -27,13 +25,11 @@ export default function SommetsPage() {
           </Link>
         </div>
 
-        {/* 1. Bloc d'en-tête (Détails du sommet) */}
        <Details 
           sommet={logic.sommet} 
           wiki={logic.wikiData || { description: "Chargement...", image: "" }}
         />
 
-        {/* 2. Bloc d'enregistrement (Formulaire) */}
         <Enregistrement 
           actionState={logic.actionState} setActionState={logic.setActionState}
           dateAscension={logic.dateAscension} setDateAscension={logic.setDateAscension}
@@ -43,7 +39,6 @@ export default function SommetsPage() {
           myAscensionId={logic.myAscensionId}
         />
 
-        {/* 3. Bloc communautaire (Notes et Avis) */}
         <Notes 
           stats={logic.stats}
           sortedAscensions={logic.sortedAscensions}

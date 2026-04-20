@@ -1,4 +1,3 @@
-// app/principale/logic/principale.hook.ts
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore'; 
 import { db } from '../../shared/lib/firebase';
@@ -23,7 +22,6 @@ export function usePrincipale() {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
 
   useEffect(() => {
-    // 2. Centrage automatique sur l'utilisateur à l'ouverture
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition((position) => {
         setViewState(prev => ({
@@ -31,7 +29,7 @@ export function usePrincipale() {
           longitude: position.coords.longitude,
           latitude: position.coords.latitude,
           zoom: 10,
-          transitionDuration: 2000 // Petit effet de glissement au démarrage
+          transitionDuration: 2000
         }));
       });
     }
@@ -40,11 +38,9 @@ export function usePrincipale() {
       try {
         const currentUserId = "user_test_123"; 
         
-        // 1. Charger tes sommets personnels
         const sommets = await fetchUserSummits(currentUserId);
         setMesSommets(sommets);
 
-        // 2. Charger les stats... (existant)
       } catch (error) {
         console.error("Erreur de chargement:", error);
       }
@@ -58,25 +54,21 @@ export function usePrincipale() {
   const handleToggle3D = () => setViewState(toggle3D);
 
   const handleSelectSearchResult = (sommetRecherche: SommetCarte) => {
-    // 1. L'extracteur absolu : coupe tout ce qui est avant le dernier "_" et enlève les lettres
     const getPureId = (rawId: string | number) => {
       const stringId = String(rawId);
-      // On prend le dernier morceau (ex: user_123_456 -> 456)
       const lastPart = stringId.split('_').pop() || stringId;
-      // On enlève tout ce qui n'est pas un chiffre (au cas où il reste "peak" ou "osm")
       return lastPart.replace(/\D/g, ''); 
     };
 
     const pureRechercheId = getPureId(sommetRecherche.id);
     
-    // 2. On compare avec la racine pure de nos sommets sauvegardés
     const estDejaDansLeCarnet = mesSommets.some(s => 
       getPureId(s.id) === pureRechercheId
     );
     
     setPopupInfo({
       ...sommetRecherche,
-      id: pureRechercheId, // On force l'ID pur
+      id: pureRechercheId,
       dejaEnregistre: estDejaDansLeCarnet
     });
   };
@@ -88,10 +80,8 @@ export function usePrincipale() {
     const success = await addSummitToUser(currentUserId, sommetPropre);
     
     if (success) {
-      // Met à jour la liste globale des points sur la carte
       setMesSommets(prev => [...prev, sommetPropre]);
       
-      // ✨ SOLUTION POINT 1 : Met à jour le popup actuellement ouvert
       setPopupInfo(prev => prev ? { ...prev, dejaEnregistre: true } : null);
     }
   };
@@ -103,6 +93,6 @@ export function usePrincipale() {
     handleZoomIn, handleZoomOut, handleResetNorth, handleToggle3D,
     userStats,
     handleSelectSearchResult,
-    handleAddSummitToProfile // 👈 N'oublie pas de l'exporter !
+    handleAddSummitToProfile
   };
 }

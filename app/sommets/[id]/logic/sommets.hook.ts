@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/app/shared/lib/firebase";
-
 import { SommetCarte } from "../../../principale/logic/principale.selectors";
 import { getSummitFromCarnet, getCommunityReviews, fetchWikipediaData } from "../data/sommets.service";
 import { calculateSummitStats, sortAscensions } from "./sommets.selectors";
@@ -14,8 +13,6 @@ export function useSommets(summitId: string) {
   const [reviews, setReviews] = useState<SommetCarte[]>([]);
   const [wikiData, setWikiData] = useState({ description: "", image: "" });
   const [loading, setLoading] = useState(true);
-
-  // 1. ÉTATS DU FORMULAIRE
   const [actionState, setActionState] = useState<'prompt' | 'form' | 'done'>('prompt');
   const [dateAscension, setDateAscension] = useState(new Date().toISOString().split('T')[0]);
   const [rating, setRating] = useState(0);
@@ -23,10 +20,7 @@ export function useSommets(summitId: string) {
   const [markerColor, setMarkerColor] = useState("#10b981");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [myAscensionId, setMyAscensionId] = useState<string | null>(null);
-
-  // 2. ÉTATS DES STATISTIQUES (Notes)
   const [sortBy, setSortBy] = useState<'recent' | 'rating'>('recent');
-
   const currentUserId = "user_test_123"; 
 
   useEffect(() => {
@@ -34,11 +28,9 @@ export function useSommets(summitId: string) {
       if (!cleanSummitId) return;
 
       try {
-        // On cherche avec l'ID propre uniquement
         const monSommet = await getSummitFromCarnet(currentUserId, cleanSummitId);
         let baseData = monSommet;
 
-        // Fallback URL si pas dans le carnet
         if (!baseData) {
           const urlRaw = searchParams.get('data');
           if (urlRaw) baseData = JSON.parse(decodeURIComponent(urlRaw));
@@ -46,18 +38,16 @@ export function useSommets(summitId: string) {
 
         if (baseData) {
           setSommet(baseData);
-          
-          // ✨ RECONNAISSANCE DE L'ASCENSION : On vérifie si une note existe
+
           if (monSommet && monSommet.note && monSommet.note > 0) {
-            setActionState('done'); // Déjà noté -> Récap
+            setActionState('done');
             setRating(monSommet.note);
             setComment(monSommet.commentaire || "");
             setDateAscension(monSommet.dateAjout?.split('T')[0] || "");
           } else if (monSommet) {
-            setActionState('form'); // Dans le carnet mais pas noté -> Formulaire
+            setActionState('form');
           }
 
-          // Enrichissement Wikipédia
           const wiki = await fetchWikipediaData(baseData.nom);
           setWikiData({ description: wiki.description, image: wiki.image_wiki || "" });
         }
@@ -99,10 +89,7 @@ export function useSommets(summitId: string) {
 
       setMyAscensionId(docId);
       setActionState('done');
-      
-      // ✨ LA SOLUTION ICI : On ajoute instantanément notre avis au carnet de la communauté !
       setReviews(prev => {
-        // On enlève notre ancien avis s'il y en avait un, et on met le nouveau en premier
         const autresAvis = prev.filter(r => r.userId !== currentUserId);
         return [newSummitData, ...autresAvis];
       });
@@ -115,7 +102,7 @@ export function useSommets(summitId: string) {
   };
 
   const mappedReviews = reviews
-    .filter(r => r.note && r.note > 0) // 👈 FILTRE ICI
+    .filter(r => r.note && r.note > 0)
     .map(r => ({
       id: r.id,
       userId: r.userId || 'Alpiniste',
@@ -127,8 +114,7 @@ export function useSommets(summitId: string) {
 
   const stats = calculateSummitStats(mappedReviews as any);
   const sortedAscensions = sortAscensions(mappedReviews as any, sortBy);
-
-  // 5. ON EXPORTE TOUT CE DONT PAGE.TSX A BESOIN
+  
   return {
     sommet, wikiData, loading,
     actionState, setActionState,

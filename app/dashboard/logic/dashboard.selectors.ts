@@ -1,6 +1,5 @@
 import { SommetCarte } from "../../principale/logic/principale.selectors";
 
-// 1. Trier par date d'ajout (du plus récent au plus ancien)
 export const sortCarnet = (sommets: SommetCarte[]): SommetCarte[] => {
   return [...sommets].sort((a, b) => {
     const dateA = a.dateAjout ? new Date(a.dateAjout).getTime() : 0;
@@ -9,9 +8,7 @@ export const sortCarnet = (sommets: SommetCarte[]): SommetCarte[] => {
   });
 };
 
-// 2. Calculer les statistiques globales
 export const calculateDashboardStats = (sommets: SommetCarte[]) => {
-  // On ne compte que ceux qui ont le statut 'fait' ou pas de statut défini
   const faits = sommets.filter(s => s.statut === 'fait' || !s.statut);
   
   if (faits.length === 0) {
