@@ -61,7 +61,7 @@ export default function Details({ sommet, wiki }: DetailsProps) {
             style={{ width: '100%', height: '100%' }}
             mapStyle="mapbox://styles/mapbox/outdoors-v12"
             mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
-            terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
+            terrain={{ source: 'mapbox-dem', exaggeration: 1 }}
             interactive={false}
           >
             <Source
