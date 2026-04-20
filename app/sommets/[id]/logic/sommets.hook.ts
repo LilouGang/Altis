@@ -8,6 +8,7 @@ import { getSummitFromCarnet, getCommunityReviews, fetchWikipediaData } from "..
 import { calculateSummitStats, sortAscensions } from "./sommets.selectors";
 
 export function useSommets(summitId: string) {
+  const cleanSummitId = summitId.replace(/^(peak_|osm_)/, '');
   const searchParams = useSearchParams();
   const [sommet, setSommet] = useState<SommetCarte | null>(null);
   const [reviews, setReviews] = useState<SommetCarte[]>([]);
@@ -30,12 +31,14 @@ export function useSommets(summitId: string) {
 
   useEffect(() => {
     async function loadAllData() {
-      if (!summitId) return;
+      if (!cleanSummitId) return;
 
       try {
-        const monSommet = await getSummitFromCarnet(currentUserId, summitId);
-        let baseData: SommetCarte | null = monSommet;
+        // On cherche avec l'ID propre uniquement
+        const monSommet = await getSummitFromCarnet(currentUserId, cleanSummitId);
+        let baseData = monSommet;
 
+        // Fallback URL si pas dans le carnet
         if (!baseData) {
           const urlRaw = searchParams.get('data');
           if (urlRaw) baseData = JSON.parse(decodeURIComponent(urlRaw));
@@ -43,20 +46,23 @@ export function useSommets(summitId: string) {
 
         if (baseData) {
           setSommet(baseData);
-          if (monSommet) {
-            setActionState('done');
-            setDateAscension(monSommet.dateAjout?.split('T')[0] || "");
-            setRating(monSommet.note || 0);
+          
+          // ✨ RECONNAISSANCE DE L'ASCENSION : On vérifie si une note existe
+          if (monSommet && monSommet.note && monSommet.note > 0) {
+            setActionState('done'); // Déjà noté -> Récap
+            setRating(monSommet.note);
             setComment(monSommet.commentaire || "");
-            setMarkerColor(monSommet.couleur || "#10b981");
-            setMyAscensionId(`${currentUserId}_${summitId}`); // On sait qu'on l'a déjà !
+            setDateAscension(monSommet.dateAjout?.split('T')[0] || "");
+          } else if (monSommet) {
+            setActionState('form'); // Dans le carnet mais pas noté -> Formulaire
           }
 
+          // Enrichissement Wikipédia
           const wiki = await fetchWikipediaData(baseData.nom);
           setWikiData({ description: wiki.description, image: wiki.image_wiki || "" });
         }
 
-        const allReviews = await getCommunityReviews(summitId);
+       const allReviews = await getCommunityReviews(cleanSummitId);
         setReviews(allReviews);
 
       } catch (error) {
@@ -66,32 +72,41 @@ export function useSommets(summitId: string) {
       }
     }
     loadAllData();
-  }, [summitId, searchParams]);
+  }, [cleanSummitId, searchParams]);
 
-  // 3. SOUMISSION DU FORMULAIRE (Vers la nouvelle base user_summits)
   const handleSubmitAscension = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sommet || rating === 0) return alert("Veuillez donner une note.");
     setIsSubmitting(true);
 
     try {
-      const docId = `${currentUserId}_${summitId}`;
+      const cleanSummitId = summitId.replace(/^(peak_|osm_)/, '');
+      const docId = `${currentUserId}_${cleanSummitId}`;
       const summitRef = doc(db, 'user_summits', docId);
       
-      // On sauvegarde toutes les infos au même endroit
-      await setDoc(summitRef, {
+      const newSummitData: SommetCarte = {
         ...sommet,
+        id: cleanSummitId,
         userId: currentUserId,
         dateAjout: new Date(dateAscension).toISOString(),
         statut: 'fait',
         couleur: markerColor,
         note: rating,
         commentaire: comment
-      }, { merge: true });
+      };
+
+      await setDoc(summitRef, newSummitData, { merge: true });
 
       setMyAscensionId(docId);
       setActionState('done');
       
+      // ✨ LA SOLUTION ICI : On ajoute instantanément notre avis au carnet de la communauté !
+      setReviews(prev => {
+        // On enlève notre ancien avis s'il y en avait un, et on met le nouveau en premier
+        const autresAvis = prev.filter(r => r.userId !== currentUserId);
+        return [newSummitData, ...autresAvis];
+      });
+
     } catch (error) {
       alert("Erreur lors de l'enregistrement.");
     } finally {
@@ -99,19 +114,16 @@ export function useSommets(summitId: string) {
     }
   };
 
-  // 4. ADAPTATION POUR LES STATS
-  // On transforme nos Sommets de Firebase au format attendu par tes composants de stats
-  const mappedReviews = reviews.map(r => ({
-    id: r.id,
-    userId: r.userId || 'inconnu',
-    summitId: r.id,
-    summitName: r.nom,
-    altitude: r.altitude,
-    dateAscension: r.dateAjout || new Date().toISOString(),
-    rating: r.note || 0,
-    comment: r.commentaire || "",
-    customColor: r.couleur || "#10b981"
-  }));
+  const mappedReviews = reviews
+    .filter(r => r.note && r.note > 0) // 👈 FILTRE ICI
+    .map(r => ({
+      id: r.id,
+      userId: r.userId || 'Alpiniste',
+      rating: r.note || 0,
+      comment: r.commentaire || "",
+      dateAscension: r.dateAjout || new Date().toISOString(),
+      customColor: r.couleur || "#10b981"
+    }));
 
   const stats = calculateSummitStats(mappedReviews as any);
   const sortedAscensions = sortAscensions(mappedReviews as any, sortBy);

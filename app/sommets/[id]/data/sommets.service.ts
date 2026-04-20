@@ -2,15 +2,15 @@ import { doc, getDoc, collection, query, where, getDocs, setDoc } from "firebase
 import { db } from "@/app/shared/lib/firebase";
 import { SommetCarte } from "../../../principale/logic/principale.selectors";
 
-// 1. Chercher si LE sommet est dans MON carnet
 export async function getSummitFromCarnet(userId: string, summitId: string) {
+  // summitId arrive ici déjà nettoyé grâce à notre hook !
   const docRef = doc(db, "user_summits", `${userId}_${summitId}`);
   const docSnap = await getDoc(docRef);
   return docSnap.exists() ? (docSnap.data() as SommetCarte) : null;
 }
 
-// 2. Chercher les avis de TOUTE la communauté pour ce sommet
 export async function getCommunityReviews(summitId: string) {
+  // On cherche directement l'ID nettoyé
   const q = query(collection(db, "user_summits"), where("id", "==", summitId));
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => doc.data() as SommetCarte);

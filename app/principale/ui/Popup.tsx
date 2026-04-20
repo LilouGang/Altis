@@ -27,8 +27,10 @@ export default function PopupFiche({ sommet, dejaEnregistre = false, onAdd }: Po
   const imageUrl = sommet.image_couverture_url || wikiImage;
 
   const handleNavigation = () => {
+    const cleanId = String(sommet.id).split('_').pop()?.replace(/^(peak_|osm_)/, '') || '';
+    
     const dataString = encodeURIComponent(JSON.stringify(sommet));
-    router.push(`/sommets/${sommet.id.replace('peak_', '')}?data=${dataString}`);
+    router.push(`/sommets/${cleanId}?data=${dataString}`);
   };
 
   const handleAddClick = (e: React.MouseEvent) => {

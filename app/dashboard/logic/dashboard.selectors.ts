@@ -1,28 +1,26 @@
-import { Ascension, UserStats } from "../../shared/types/index";
+import { SommetCarte } from "../../principale/logic/principale.selectors";
 
-// 1. Fusionner les ascensions avec les couleurs personnalisées et trier par date
-export const formatAndSortAscensions = (
-  ascensions: Ascension[], 
-  colorsMap: Record<string, string>
-): Ascension[] => {
-  const formatted = ascensions.map(asc => ({
-    ...asc,
-    customColor: colorsMap[asc.summitId] || "#10b981" // Vert par défaut
-  }));
-
-  // Tri du plus récent au plus ancien
-  return formatted.sort((a, b) => new Date(b.dateAscension).getTime() - new Date(a.dateAscension).getTime());
+// 1. Trier par date d'ajout (du plus récent au plus ancien)
+export const sortCarnet = (sommets: SommetCarte[]): SommetCarte[] => {
+  return [...sommets].sort((a, b) => {
+    const dateA = a.dateAjout ? new Date(a.dateAjout).getTime() : 0;
+    const dateB = b.dateAjout ? new Date(b.dateAjout).getTime() : 0;
+    return dateB - dateA;
+  });
 };
 
 // 2. Calculer les statistiques globales
-export const calculateDashboardStats = (ascensions: Ascension[]): UserStats => {
-  if (ascensions.length === 0) {
+export const calculateDashboardStats = (sommets: SommetCarte[]) => {
+  // On ne compte que ceux qui ont le statut 'fait' ou pas de statut défini
+  const faits = sommets.filter(s => s.statut === 'fait' || !s.statut);
+  
+  if (faits.length === 0) {
     return { totalSummits: 0, totalAscent: 0, maxAltitude: 0 };
   }
   
   return {
-    totalSummits: ascensions.length,
-    totalAscent: ascensions.reduce((acc, curr) => acc + curr.altitude, 0),
-    maxAltitude: Math.max(...ascensions.map(a => a.altitude))
+    totalSummits: faits.length,
+    totalAscent: faits.reduce((acc, curr) => acc + (curr.altitude || 0), 0),
+    maxAltitude: Math.max(...faits.map(a => a.altitude || 0))
   };
 };

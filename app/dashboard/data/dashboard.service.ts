@@ -1,21 +1,10 @@
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../shared/lib/firebase";
-import { Ascension } from "../../shared/types/index";
+import { SommetCarte } from "../../principale/logic/principale.selectors";
 
-export const fetchUserAscensions = async (userId: string): Promise<Ascension[]> => {
-  const q = query(collection(db, "ascensions"), where("userId", "==", userId));
+export const fetchUserCarnet = async (userId: string): Promise<SommetCarte[]> => {
+  const q = query(collection(db, "user_summits"), where("userId", "==", userId));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Ascension[];
-};
-
-export const fetchUserColors = async (userId: string): Promise<Record<string, string>> => {
-  const qColors = query(collection(db, "user_markers"), where("userId", "==", userId));
-  const colorsSnap = await getDocs(qColors);
-  
-  const colorsMap: Record<string, string> = {};
-  colorsSnap.docs.forEach(doc => {
-    colorsMap[doc.data().summitId] = doc.data().color;
-  });
-  
-  return colorsMap;
+  // On retourne directement les documents sous le format de ton interface SommetCarte
+  return snapshot.docs.map(doc => doc.data() as SommetCarte);
 };

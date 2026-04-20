@@ -1,6 +1,9 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Map, { Source } from 'react-map-gl/mapbox';
+// 🎨 1. LE CORRECTIF CSS EST ICI :
+import 'mapbox-gl/dist/mapbox-gl.css'; 
+
 import { ChevronLeft, ChevronRight, Mountain, MapPin, Info } from "lucide-react";
 import { SommetCarte } from "../../../principale/logic/principale.selectors";
 
@@ -11,24 +14,33 @@ interface DetailsProps {
 
 export default function Details({ sommet, wiki }: DetailsProps) {
   const [activeTab, setActiveTab] = useState<'3d' | 'photo'>('3d');
+  // ⏱️ 2. NOUVEL ÉTAT : On piste si la carte a fini de charger
+  const [mapLoaded, setMapLoaded] = useState(false); 
   const mapRef = useRef<any>(null);
   
   const hasImage = !!(wiki?.image || sommet?.image_couverture_url);
 
-  // 🎡 CONFIGURATION DE LA ROTATION
   useEffect(() => {
     let animationFrame: number;
     const rotate = () => {
-      if (mapRef.current && activeTab === '3d') {
+      if (mapRef.current && activeTab === '3d' && mapLoaded) {
         const map = mapRef.current.getMap();
-        // Vitesse réglée à 0.05 comme demandé
-        map.setBearing((map.getBearing() + 0.05) % 360);
+        
+        // 🔒 LE SECRET EST ICI : On force le centre à CHAQUE frame
+        map.jumpTo({
+          center: [sommet.coordonnees.longitude, sommet.coordonnees.latitude],
+          bearing: (map.getBearing() + 0.05) % 360
+        });
       }
       animationFrame = requestAnimationFrame(rotate);
     };
-    if (activeTab === '3d') animationFrame = requestAnimationFrame(rotate);
+    
+    if (activeTab === '3d') {
+      animationFrame = requestAnimationFrame(rotate);
+    }
+    
     return () => cancelAnimationFrame(animationFrame);
-  }, [activeTab]);
+  }, [activeTab, mapLoaded, sommet.coordonnees]);
 
   return (
     <div className="bg-white rounded-[40px] border border-neutral-200 shadow-sm overflow-hidden mb-8">
@@ -37,20 +49,21 @@ export default function Details({ sommet, wiki }: DetailsProps) {
         {activeTab === '3d' || !hasImage ? (
           <Map
             ref={mapRef}
+            // 🚀 3. ON DÉCLENCHE LE BOOLEAN QUAND TOUT EST PRÊT
+            onLoad={() => setMapLoaded(true)} 
             initialViewState={{
               longitude: sommet.coordonnees.longitude,
               latitude: sommet.coordonnees.latitude,
-              zoom: 15,
+              zoom: 14,
               pitch: 80,
               bearing: 0
             }}
             style={{ width: '100%', height: '100%' }}
             mapStyle="mapbox://styles/mapbox/outdoors-v12"
             mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
-            terrain={{ source: 'mapbox-dem', exaggeration: 1 }}
+            terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
             interactive={false}
           >
-            {/* 🏔️ LA SOURCE MANQUANTE : Elle permet d'activer le relief */}
             <Source
               id="mapbox-dem"
               type="raster-dem"

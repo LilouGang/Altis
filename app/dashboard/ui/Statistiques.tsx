@@ -1,37 +1,41 @@
-import { Trophy, TrendingUp, MountainSnow } from 'lucide-react';
-import { UserStats } from '../../shared/types/index';
+import { Mountain, ArrowUpRight, Maximize2 } from 'lucide-react';
 
-export default function DashboardStats({ stats }: { stats: UserStats }) {
+export default function DashboardStats({ stats }: { stats: any }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
       
-      <div className="bg-white p-6 rounded-3xl border border-neutral-200 shadow-sm flex items-center gap-5">
-        <div className="h-14 w-14 rounded-2xl bg-amber-50 flex items-center justify-center shrink-0">
-          <Trophy size={28} className="text-amber-500" />
+      {/* Carte 1 : Sommets */}
+      <div className="bg-white p-6 rounded-4xl border border-neutral-100/80 shadow-[0_2px_10px_rgb(0,0,0,0.02)] flex flex-col justify-between h-36 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <div className="flex items-center gap-2 text-neutral-400">
+          <Mountain size={16} strokeWidth={2.5} />
+          <span className="text-sm font-medium">Sommets gravis</span>
         </div>
-        <div>
-          <p className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Sommets gravis</p>
-          <p className="text-3xl font-black text-neutral-900">{stats.totalSummits}</p>
-        </div>
-      </div>
-
-      <div className="bg-white p-6 rounded-3xl border border-neutral-200 shadow-sm flex items-center gap-5">
-        <div className="h-14 w-14 rounded-2xl bg-blue-50 flex items-center justify-center shrink-0">
-          <MountainSnow size={28} className="text-blue-500" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Altitude cumulée</p>
-          <p className="text-3xl font-black text-neutral-900">{stats.totalAscent.toLocaleString()} <span className="text-lg text-neutral-500 font-bold">m</span></p>
+        <div className="text-5xl font-bold text-neutral-800 tracking-tight leading-none">
+          {stats.totalSummits}
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-3xl border border-neutral-200 shadow-sm flex items-center gap-5">
-        <div className="h-14 w-14 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0">
-          <TrendingUp size={28} className="text-emerald-600" />
+      {/* Carte 2 : Dénivelé */}
+      <div className="bg-white p-6 rounded-4xl border border-neutral-100/80 shadow-[0_2px_10px_rgb(0,0,0,0.02)] flex flex-col justify-between h-36 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <div className="flex items-center gap-2 text-neutral-400">
+          <ArrowUpRight size={16} strokeWidth={2.5} />
+          <span className="text-sm font-medium">Dénivelé cumulé</span>
         </div>
-        <div>
-          <p className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Record absolu</p>
-          <p className="text-3xl font-black text-neutral-900">{stats.maxAltitude} <span className="text-lg text-neutral-500 font-bold">m</span></p>
+        <div className="text-5xl font-bold text-neutral-800 tracking-tight leading-none flex items-baseline gap-1">
+          {stats.totalAscent.toLocaleString('fr-FR')}
+          <span className="text-xl font-semibold text-neutral-400">m</span>
+        </div>
+      </div>
+
+      {/* Carte 3 : Record */}
+      <div className="bg-white p-6 rounded-4xl border border-neutral-100/80 shadow-[0_2px_10px_rgb(0,0,0,0.02)] flex flex-col justify-between h-36 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <div className="flex items-center gap-2 text-neutral-400">
+          <Maximize2 size={16} strokeWidth={2.5} />
+          <span className="text-sm font-medium">Altitude record</span>
+        </div>
+        <div className="text-5xl font-bold text-neutral-800 tracking-tight leading-none flex items-baseline gap-1">
+          {stats.maxAltitude.toLocaleString('fr-FR')}
+          <span className="text-xl font-semibold text-neutral-400">m</span>
         </div>
       </div>
 

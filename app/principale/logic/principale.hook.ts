@@ -9,7 +9,7 @@ import { zoomIn, zoomOut, resetNorth, toggle3D, ViewState } from './principale.a
 import { SommetCarte } from './principale.selectors';
 
 export function usePrincipale() {
-  // 1. Position initiale : Zoom 6.5 au centre de la France
+  const currentUserId = "user_test_123";
   const [viewState, setViewState] = useState<ViewState>({ 
     longitude: 2.2137, 
     latitude: 46.2276, 
@@ -18,7 +18,7 @@ export function usePrincipale() {
     bearing: 0 
   });
   
-  const [popupInfo, setPopupInfo] = useState<SommetCarte | null>(null);
+  const [popupInfo, setPopupInfo] = useState<(SommetCarte & { dejaEnregistre?: boolean }) | null>(null);
   const [mesSommets, setMesSommets] = useState<SommetCarte[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
 
@@ -57,22 +57,42 @@ export function usePrincipale() {
   const handleResetNorth = () => setViewState(resetNorth);
   const handleToggle3D = () => setViewState(toggle3D);
 
-  const handleSelectSearchResult = (sommet: SommetCarte) => {
-    setPopupInfo(sommet);
+  const handleSelectSearchResult = (sommetRecherche: SommetCarte) => {
+    // 1. L'extracteur absolu : coupe tout ce qui est avant le dernier "_" et enlève les lettres
+    const getPureId = (rawId: string | number) => {
+      const stringId = String(rawId);
+      // On prend le dernier morceau (ex: user_123_456 -> 456)
+      const lastPart = stringId.split('_').pop() || stringId;
+      // On enlève tout ce qui n'est pas un chiffre (au cas où il reste "peak" ou "osm")
+      return lastPart.replace(/\D/g, ''); 
+    };
+
+    const pureRechercheId = getPureId(sommetRecherche.id);
+    
+    // 2. On compare avec la racine pure de nos sommets sauvegardés
+    const estDejaDansLeCarnet = mesSommets.some(s => 
+      getPureId(s.id) === pureRechercheId
+    );
+    
+    setPopupInfo({
+      ...sommetRecherche,
+      id: pureRechercheId, // On force l'ID pur
+      dejaEnregistre: estDejaDansLeCarnet
+    });
   };
 
   const handleAddSummitToProfile = async (sommetAAjouter: SommetCarte) => {
-    const currentUserId = "user_test_123"; // TODO: Ton vrai ID
-    
-    // 1. Sauvegarde dans Firebase
-    const success = await addSummitToUser(currentUserId, sommetAAjouter);
+    const cleanId = sommetAAjouter.id.replace(/^(peak_|osm_)/, '');
+    const sommetPropre = { ...sommetAAjouter, id: cleanId };
+
+    const success = await addSummitToUser(currentUserId, sommetPropre);
     
     if (success) {
-      // 2. On l'ajoute à l'état local pour que le point bleu apparaisse immédiatement !
-      setMesSommets(prev => [...prev, sommetAAjouter]);
+      // Met à jour la liste globale des points sur la carte
+      setMesSommets(prev => [...prev, sommetPropre]);
       
-      // 3. Optionnel : Fermer la popup ou afficher une petite notification
-      console.log(`${sommetAAjouter.nom} ajouté avec succès !`);
+      // ✨ SOLUTION POINT 1 : Met à jour le popup actuellement ouvert
+      setPopupInfo(prev => prev ? { ...prev, dejaEnregistre: true } : null);
     }
   };
 

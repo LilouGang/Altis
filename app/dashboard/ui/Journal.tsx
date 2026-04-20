@@ -1,52 +1,57 @@
 import { Star, MapPin } from 'lucide-react';
-import { Ascension } from '../../shared/types/index';
+import { SommetCarte } from '../../principale/logic/principale.selectors';
 
-export default function RecentAscensions({ ascensions }: { ascensions: Ascension[] }) {
-  if (ascensions.length === 0) {
+export default function RecentAscensions({ carnet }: { carnet: SommetCarte[] }) {
+  if (carnet.length === 0) {
     return (
-      <div className="bg-neutral-50 border border-neutral-200 border-dashed rounded-3xl p-10 text-center">
-        <MapPin size={32} className="mx-auto text-neutral-300 mb-3" />
-        <h3 className="text-lg font-bold text-neutral-700">Aucune ascension pour le moment</h3>
-        <p className="text-neutral-500 mt-1">Explorez la carte et marquez votre premier sommet !</p>
+      <div className="bg-transparent border border-neutral-200 border-dashed rounded-4xl p-12 text-center flex flex-col items-center">
+        <MapPin size={24} className="text-neutral-300 mb-3" />
+        <h3 className="text-base font-bold text-neutral-600">Votre carnet est vide</h3>
+        <p className="text-sm text-neutral-400 mt-1">Explorez la carte et marquez votre premier sommet.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white border border-neutral-200 shadow-sm rounded-3xl overflow-hidden">
-      <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50/50">
-        <h2 className="font-bold text-neutral-800">Journal de bord</h2>
-      </div>
-      <div className="divide-y divide-neutral-100">
-        {ascensions.map((asc) => (
-          <div key={asc.id} className="p-6 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center hover:bg-neutral-50 transition-colors">
+    <div className="flex flex-col gap-4">
+      <h2 className="font-bold text-neutral-800 text-lg mb-2 px-2">Dernières ascensions</h2>
+      
+      {carnet.map((asc) => {
+        // Formatage d'une date lisible ("12 mai 2026")
+        const dateStr = asc.dateAjout ? new Date(asc.dateAjout).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Date inconnue';
+
+        return (
+          <div key={asc.id} className="relative bg-white p-5 rounded-3xl border border-neutral-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:shadow-md group">
             
-            <div className="flex items-center gap-4">
-              {/* La pastille de couleur personnalisée par l'utilisateur ! */}
-              <div className="w-4 h-12 rounded-full shrink-0 shadow-inner" style={{ backgroundColor: asc.customColor }}></div>
-              <div>
-                <h3 className="font-bold text-lg text-neutral-900">{asc.summitName}</h3>
-                <p className="text-sm font-medium text-neutral-500">{asc.altitude}m • Fait le {new Date(asc.dateAscension).toLocaleDateString('fr-FR')}</p>
+            {/* Ligne de couleur personnalisée, beaucoup plus discrète */}
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1/2 rounded-r-full" style={{ backgroundColor: asc.couleur || '#10b981' }} />
+            
+            <div className="pl-3 flex flex-col">
+              <div className="flex items-center gap-2 mb-0.5">
+                <h3 className="font-bold text-neutral-900 text-base">{asc.nom}</h3>
+                <span className="text-[10px] bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-md font-bold">{asc.altitude} m</span>
               </div>
+              <p className="text-xs font-medium text-neutral-400">{dateStr} • {asc.pays}</p>
             </div>
 
-            <div className="flex flex-col md:items-end gap-2 w-full md:w-auto">
-              {/* Affichage de la note */}
-              <div className="flex gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={16} className={i < asc.rating ? "text-amber-400 fill-amber-400" : "text-neutral-200"} />
-                ))}
-              </div>
-              {asc.comment && (
-                <p className="text-sm text-neutral-600 italic bg-white border border-neutral-100 px-3 py-2 rounded-xl">
-                  "{asc.comment}"
+            <div className="pl-3 md:pl-0 flex flex-col items-start md:items-end gap-2">
+              {asc.note && asc.note > 0 && (
+                <div className="flex gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={14} className={i < asc.note! ? "text-amber-400 fill-amber-400" : "text-neutral-200"} />
+                  ))}
+                </div>
+              )}
+              {asc.commentaire && (
+                <p className="text-sm text-neutral-600 font-medium">
+                  {asc.commentaire}
                 </p>
               )}
             </div>
-
+            
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }
