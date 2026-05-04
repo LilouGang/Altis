@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore'; 
 import { db } from '../../shared/lib/firebase';
 import { UserStats, Ascension } from '../../shared/types/index';
 import { calculateDashboardStats } from '../../dashboard/logic/dashboard.selectors';
 import { addSummitToUser, fetchUserSummits } from '../data/principale.service';
 import { zoomIn, zoomOut, resetNorth, toggle3D, ViewState } from './principale.actions';
 import { SommetCarte } from './principale.selectors';
+import { useAuth } from '../../shared/lib/AuthContext'; 
 
 export function usePrincipale() {
-  const currentUserId = "user_test_123";
+  const { user } = useAuth(); 
+  const currentUserId = user?.uid || "non_connecte";
+
   const [viewState, setViewState] = useState<ViewState>({ 
     longitude: 2.2137, 
     latitude: 46.2276, 
@@ -21,6 +23,7 @@ export function usePrincipale() {
   const [mesSommets, setMesSommets] = useState<SommetCarte[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
 
+  // 📍 1er useEffect : UNIQUEMENT LA GÉOLOCALISATION (Se lance 1 seule fois)
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition((position) => {
@@ -31,22 +34,28 @@ export function usePrincipale() {
           zoom: 10,
           transitionDuration: 2000
         }));
+      }, (error) => {
+        console.warn("Géolocalisation refusée ou ignorée :", error);
       });
     }
+  }, []); // 👈 Le tableau vide est crucial ici !
 
+  // ☁️ 2ème useEffect : UNIQUEMENT FIREBASE (Se relance quand on se connecte/déconnecte)
+  useEffect(() => {
     async function loadData() {
-      try {
-        const currentUserId = "user_test_123"; 
-        
-        const sommets = await fetchUserSummits(currentUserId);
-        setMesSommets(sommets);
-
-      } catch (error) {
-        console.error("Erreur de chargement:", error);
+      if (currentUserId !== "non_connecte") {
+        try {
+          const sommets = await fetchUserSummits(currentUserId);
+          setMesSommets(sommets);
+        } catch (error) {
+          console.error("Erreur de chargement:", error);
+        }
+      } else {
+        setMesSommets([]);
       }
     }
     loadData();
-  }, []);
+  }, [currentUserId]);
 
   const handleZoomIn = () => setViewState(zoomIn);
   const handleZoomOut = () => setViewState(zoomOut);
@@ -74,14 +83,18 @@ export function usePrincipale() {
   };
 
   const handleAddSummitToProfile = async (sommetAAjouter: SommetCarte) => {
-    const cleanId = sommetAAjouter.id.replace(/^(peak_|osm_)/, '');
+    if (currentUserId === "non_connecte") {
+      alert("Vous devez être connecté pour ajouter un sommet à votre carnet.");
+      return;
+    }
+
+    const cleanId = String(sommetAAjouter.id).replace(/^(peak_|osm_)/, '');
     const sommetPropre = { ...sommetAAjouter, id: cleanId };
 
     const success = await addSummitToUser(currentUserId, sommetPropre);
     
     if (success) {
       setMesSommets(prev => [...prev, sommetPropre]);
-      
       setPopupInfo(prev => prev ? { ...prev, dejaEnregistre: true } : null);
     }
   };

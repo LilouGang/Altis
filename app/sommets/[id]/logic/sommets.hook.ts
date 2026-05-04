@@ -1,35 +1,44 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { doc, setDoc } from "firebase/firestore";
-import { db } from "@/app/shared/lib/firebase";
+import { useAuth } from "../../../shared/lib/AuthContext";
 import { SommetCarte } from "../../../principale/logic/principale.selectors";
 import { getSummitFromCarnet, getCommunityReviews, fetchWikipediaData } from "../data/sommets.service";
+import { submitAscensionData, updateMarkerColor } from "./sommets.actions";
 import { calculateSummitStats, sortAscensions } from "./sommets.selectors";
 
 export function useSommets(summitId: string) {
-  const cleanSummitId = summitId.replace(/^(peak_|osm_)/, '');
   const searchParams = useSearchParams();
+  const { user } = useAuth();
+  const currentUserId = user?.uid || "non_connecte";
+
   const [sommet, setSommet] = useState<SommetCarte | null>(null);
   const [reviews, setReviews] = useState<SommetCarte[]>([]);
   const [wikiData, setWikiData] = useState({ description: "", image: "" });
   const [loading, setLoading] = useState(true);
+
   const [actionState, setActionState] = useState<'prompt' | 'form' | 'done'>('prompt');
   const [dateAscension, setDateAscension] = useState(new Date().toISOString().split('T')[0]);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
-  const [markerColor, setMarkerColor] = useState("#10b981");
+  const [markerColor, setMarkerColor] = useState("#10b981"); 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [myAscensionId, setMyAscensionId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'recent' | 'rating'>('recent');
-  const currentUserId = "user_test_123"; 
+
+  const cleanSummitId = summitId.replace(/^(peak_|osm_)/, '');
 
   useEffect(() => {
     async function loadAllData() {
       if (!cleanSummitId) return;
 
       try {
-        const monSommet = await getSummitFromCarnet(currentUserId, cleanSummitId);
-        let baseData = monSommet;
+        let baseData: SommetCarte | null = null;
+        let monSommet: SommetCarte | null = null;
+
+        if (currentUserId !== "non_connecte") {
+          monSommet = await getSummitFromCarnet(currentUserId, cleanSummitId);
+          baseData = monSommet;
+        }
 
         if (!baseData) {
           const urlRaw = searchParams.get('data');
@@ -38,41 +47,41 @@ export function useSommets(summitId: string) {
 
         if (baseData) {
           setSommet(baseData);
-
-          if (monSommet && monSommet.note && monSommet.note > 0) {
+          
+          if (monSommet && monSommet.statut === 'fait') {
             setActionState('done');
-            setRating(monSommet.note);
+            setMyAscensionId(`${currentUserId}_${cleanSummitId}`);
+            setRating(monSommet.note || 0);
             setComment(monSommet.commentaire || "");
             setDateAscension(monSommet.dateAjout?.split('T')[0] || "");
-          } else if (monSommet) {
-            setActionState('form');
+            setMarkerColor(monSommet.couleur || "#10b981"); 
           }
-
+          
           const wiki = await fetchWikipediaData(baseData.nom);
           setWikiData({ description: wiki.description, image: wiki.image_wiki || "" });
         }
 
-       const allReviews = await getCommunityReviews(cleanSummitId);
+        const allReviews = await getCommunityReviews(cleanSummitId);
         setReviews(allReviews);
-
       } catch (error) {
-        console.error("Erreur chargement page sommet:", error);
+        console.error(error);
       } finally {
         setLoading(false);
       }
     }
     loadAllData();
-  }, [cleanSummitId, searchParams]);
+  }, [cleanSummitId, searchParams, currentUserId]);
 
   const handleSubmitAscension = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sommet || rating === 0) return alert("Veuillez donner une note.");
+    if (currentUserId === "non_connecte") return alert("Vous devez être connecté.");
+    
     setIsSubmitting(true);
 
     try {
-      const cleanSummitId = summitId.replace(/^(peak_|osm_)/, '');
       const docId = `${currentUserId}_${cleanSummitId}`;
-      const summitRef = doc(db, 'user_summits', docId);
+      const isUpdate = myAscensionId !== null;
       
       const newSummitData: SommetCarte = {
         ...sommet,
@@ -85,19 +94,32 @@ export function useSommets(summitId: string) {
         commentaire: comment
       };
 
-      await setDoc(summitRef, newSummitData, { merge: true });
+      await submitAscensionData(isUpdate, docId, newSummitData);
 
       setMyAscensionId(docId);
       setActionState('done');
+      
       setReviews(prev => {
         const autresAvis = prev.filter(r => r.userId !== currentUserId);
         return [newSummitData, ...autresAvis];
       });
-
+      
     } catch (error) {
       alert("Erreur lors de l'enregistrement.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleChangeColor = async (newColor: string) => {
+    if (!myAscensionId || currentUserId === "non_connecte") return;
+    
+    setMarkerColor(newColor);
+    
+    try {
+      await updateMarkerColor(myAscensionId, newColor);
+    } catch (error) {
+      alert("Erreur lors de la sauvegarde de la couleur.");
     }
   };
 
@@ -114,7 +136,7 @@ export function useSommets(summitId: string) {
 
   const stats = calculateSummitStats(mappedReviews as any);
   const sortedAscensions = sortAscensions(mappedReviews as any, sortBy);
-  
+
   return {
     sommet, wikiData, loading,
     actionState, setActionState,
@@ -123,6 +145,9 @@ export function useSommets(summitId: string) {
     comment, setComment,
     isSubmitting, handleSubmitAscension,
     myAscensionId,
-    stats, sortedAscensions, sortBy, setSortBy
+    stats, sortedAscensions, sortBy, setSortBy,
+    isLoggedIn: currentUserId !== "non_connecte",
+    markerColor, 
+    handleChangeColor
   };
 }

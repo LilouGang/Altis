@@ -1,31 +1,46 @@
-import { doc, getDoc, collection, query, where, getDocs, setDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/app/shared/lib/firebase";
 import { SommetCarte } from "../../../principale/logic/principale.selectors";
 
-export async function getSummitFromCarnet(userId: string, summitId: string) {
-  const docRef = doc(db, "user_summits", `${userId}_${summitId}`);
+export const getSummitFromCarnet = async (userId: string, summitId: string): Promise<SommetCarte | null> => {
+  const docRef = doc(db, 'user_summits', `${userId}_${summitId}`);
   const docSnap = await getDoc(docRef);
-  return docSnap.exists() ? (docSnap.data() as SommetCarte) : null;
-}
+  if (docSnap.exists()) return docSnap.data() as SommetCarte;
+  return null;
+};
 
-export async function getCommunityReviews(summitId: string) {
-  const q = query(collection(db, "user_summits"), where("id", "==", summitId));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => doc.data() as SommetCarte);
-}
+export const getCommunityReviews = async (summitId: string): Promise<SommetCarte[]> => {
+  const q = query(collection(db, 'user_summits'), where('id', '==', summitId));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => doc.data() as SommetCarte);
+};
 
-export async function fetchWikipediaData(nomSommet: string) {
+export const fetchWikipediaData = async (nom: string) => {
   try {
-    const url = `https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(nomSommet)}`;
-    const response = await fetch(url);
-    const data = await response.json();
-
+    const res = await fetch(`https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(nom)}`);
+    const data = await res.json();
     return {
-      description: data.extract || "Aucune description disponible pour ce sommet.",
-      image_wiki: data.originalimage?.source || null,
-      description_short: data.description || ""
+      description: data.extract || "Aucune description disponible.",
+      image_wiki: data.originalimage?.source || ""
     };
-  } catch (error) {
-    return { description: "", image_wiki: null, description_short: "" };
+  } catch {
+    return { description: "Aucune description disponible.", image_wiki: "" };
   }
-}
+};
+
+export const addAscension = async (docId: string, data: SommetCarte) => {
+  const summitRef = doc(db, 'user_summits', docId);
+  await setDoc(summitRef, data, { merge: true });
+  return docId;
+};
+
+export const updateAscension = async (docId: string, data: Partial<SommetCarte>) => {
+  const summitRef = doc(db, 'user_summits', docId);
+  await updateDoc(summitRef, data);
+  return docId;
+};
+
+export const saveMarkerColor = async (docId: string, color: string) => {
+  const summitRef = doc(db, 'user_summits', docId);
+  await updateDoc(summitRef, { couleur: color });
+};

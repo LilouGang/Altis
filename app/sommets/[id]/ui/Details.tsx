@@ -4,13 +4,19 @@ import Map, { Source } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css'; 
 import { ChevronLeft, ChevronRight, Mountain, MapPin, Info } from "lucide-react";
 import { SommetCarte } from "../../../principale/logic/principale.selectors";
+import DrapeauCouleur from "./DrapeauCouleur"; // On s'assure que le drapeau est bien importé
 
 interface DetailsProps {
   sommet: SommetCarte;
   wiki: { description: string; image: string };
+  // 👇 On ajoute bien les 3 propriétés ici pour que TypeScript soit content !
+  isRecorded: boolean;
+  markerColor: string;
+  onChangeColor: (color: string) => void;
 }
 
-export default function Details({ sommet, wiki }: DetailsProps) {
+// 👇 Et on n'oublie pas de les récupérer ici dans les parenthèses !
+export default function Details({ sommet, wiki, isRecorded, markerColor, onChangeColor }: DetailsProps) {
   const [activeTab, setActiveTab] = useState<'3d' | 'photo'>('3d');
   const [mapLoaded, setMapLoaded] = useState(false); 
   const mapRef = useRef<any>(null);
@@ -91,13 +97,20 @@ export default function Details({ sommet, wiki }: DetailsProps) {
       <div className="p-8">
         <div className="mb-8 border-b border-neutral-100 pb-8">
           <h1 className="text-4xl font-black text-neutral-900 tracking-tight mb-3">{sommet.nom}</h1>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-sm font-bold">
               <Mountain size={14} /> {sommet.altitude} m
             </div>
             <div className="flex items-center gap-1.5 bg-neutral-100 text-neutral-600 px-3 py-1 rounded-full text-sm font-bold">
               <MapPin size={14} /> {sommet.pays}
             </div>
+            {/* Le drapeau s'affichera ici uniquement si le sommet est enregistré ! */}
+            {isRecorded && (
+              <DrapeauCouleur 
+                color={markerColor} 
+                onChangeColor={onChangeColor} 
+              /> 
+            )}
           </div>
         </div>
 

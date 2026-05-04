@@ -1,13 +1,35 @@
-import { Star, MapPin } from 'lucide-react';
+"use client";
+import { Star, MapPin, Lock } from 'lucide-react';
+import Link from 'next/link';
+import { useAuth } from '../../shared/lib/AuthContext';
 import { SommetCarte } from '../../principale/logic/principale.selectors';
 
 export default function RecentAscensions({ carnet }: { carnet: SommetCarte[] }) {
+  const { user } = useAuth();
+
   if (carnet.length === 0) {
     return (
-      <div className="bg-transparent border border-neutral-200 border-dashed rounded-4xl p-12 text-center flex flex-col items-center">
-        <MapPin size={24} className="text-neutral-300 mb-3" />
-        <h3 className="text-base font-bold text-neutral-600">Votre carnet est vide</h3>
-        <p className="text-sm text-neutral-400 mt-1">Explorez la carte et marquez votre premier sommet.</p>
+      <div className="bg-transparent border border-neutral-200 border-dashed rounded-4xl p-12 text-center flex flex-col items-center mt-8">
+        {!user ? (
+          <>
+            <Lock size={32} className="text-neutral-300 mb-3" />
+            <h3 className="text-lg font-bold text-neutral-700">Votre carnet est privé</h3>
+            <p className="text-sm text-neutral-500 mt-2 mb-6 max-w-sm">
+              Connectez-vous pour commencer à sauvegarder vos ascensions et visualiser votre historique ici.
+            </p>
+            <Link href="/compte" className="px-6 py-2.5 bg-neutral-900 text-white text-sm font-bold rounded-xl hover:bg-neutral-800 transition-colors">
+              Se connecter
+            </Link>
+          </>
+        ) : (
+          <>
+            <MapPin size={32} className="text-neutral-300 mb-3" />
+            <h3 className="text-lg font-bold text-neutral-700">0 ascension enregistrée</h3>
+            <p className="text-sm text-neutral-500 mt-2 max-w-sm">
+              Explorez la carte, trouvez votre prochaine cible et marquez votre premier sommet !
+            </p>
+          </>
+        )}
       </div>
     );
   }

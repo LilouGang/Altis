@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Star, MapPin, Check, Edit2 } from "lucide-react";
+import { Star, MapPin, Check, Edit2, Lock } from "lucide-react";
+import Link from "next/link";
 
 interface EnregistrementProps {
+  isLoggedIn: boolean;
   actionState: 'prompt' | 'form' | 'done';
   setActionState: (state: 'prompt' | 'form' | 'done') => void;
   dateAscension: string;
@@ -13,13 +15,29 @@ interface EnregistrementProps {
   isSubmitting: boolean;
   onSubmit: (e: React.FormEvent) => void;
   myAscensionId: string | null;
+  // Les props markerColor et setMarkerColor ont bien été supprimées d'ici !
 }
 
 export default function Enregistrement({
-  actionState, setActionState, dateAscension, setDateAscension, rating, setRating,
+  isLoggedIn, actionState, setActionState, dateAscension, setDateAscension, rating, setRating,
   comment, setComment, isSubmitting, onSubmit, myAscensionId
 }: EnregistrementProps) {
   const [hoverRating, setHoverRating] = useState(0);
+
+  if (!isLoggedIn) {
+    return (
+      <div className="bg-white rounded-4xl border border-neutral-200 shadow-sm p-12 mb-8 text-center transition-all flex flex-col items-center">
+        <Lock size={32} className="text-neutral-300 mb-4" />
+        <h3 className="text-lg font-bold text-neutral-900 mb-1">Carnet privé</h3>
+        <p className="text-sm text-neutral-500 mb-6 max-w-sm">
+          Connectez-vous à votre compte Altis pour évaluer ce sommet et l'ajouter à votre palmarès.
+        </p>
+        <Link href="/compte" className="px-6 py-3 bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-bold rounded-xl transition-colors">
+          Se connecter
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-4xl border border-neutral-200 shadow-sm p-8 mb-8 transition-all">
@@ -44,6 +62,8 @@ export default function Enregistrement({
                 <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Date</label>
                 <input required type="date" value={dateAscension} onChange={(e) => setDateAscension(e.target.value)} className="w-full p-2.5 text-sm font-medium border border-neutral-200 rounded-xl outline-none" />
               </div>
+            </div>
+            <div className="flex flex-col gap-4 md:w-1/2">
               <div>
                 <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Note globale</label>
                 <div className="flex gap-1">
@@ -70,7 +90,9 @@ export default function Enregistrement({
       {actionState === 'done' && (
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in duration-300">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-emerald-50 flex items-center justify-center border border-emerald-100 shrink-0"><Check size={20} className="text-emerald-500" /></div>
+            <div className="h-12 w-12 rounded-full flex items-center justify-center shrink-0 shadow-sm border border-emerald-100 bg-emerald-50">
+              <Check size={20} className="text-emerald-500" />
+            </div>
             <div>
               <h3 className="font-bold text-neutral-900">Ascension enregistrée</h3>
               <p className="text-xs text-neutral-500 mt-0.5">Fait le {new Date(dateAscension).toLocaleDateString('fr-FR')} • Évalué {rating}/5</p>

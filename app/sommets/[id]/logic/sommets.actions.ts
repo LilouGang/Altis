@@ -1,20 +1,20 @@
 import { addAscension, updateAscension, saveMarkerColor } from '../data/sommets.service';
-import { Ascension } from '../../../shared/types';
+import { SommetCarte } from '../../../principale/logic/principale.selectors';
 
 export const submitAscensionData = async (
   isUpdate: boolean, 
-  ascensionId: string | null, 
-  data: Omit<Ascension, 'id'>
+  docId: string, 
+  data: SommetCarte
 ) => {
-  if (isUpdate && ascensionId) {
-    await updateAscension(ascensionId, data);
-    return ascensionId;
+  if (isUpdate) {
+    await updateAscension(docId, data);
+    return docId;
   } else {
-    const newId = await addAscension(data);
+    const newId = await addAscension(docId, data);
     return newId;
   }
 };
 
-export const updateMarkerColor = async (userId: string, summitId: string, color: string) => {
-  await saveMarkerColor(userId, summitId, color);
+export const updateMarkerColor = async (docId: string, color: string) => {
+  await saveMarkerColor(docId, color);
 };

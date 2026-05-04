@@ -28,15 +28,21 @@ export default function SommetsPage() {
        <Details 
           sommet={logic.sommet} 
           wiki={logic.wikiData || { description: "Chargement...", image: "" }}
+          // 👇 Nouvelles props pour Details
+          isRecorded={logic.myAscensionId !== null} // On sait s'il est enregistré si on a un ID
+          markerColor={logic.markerColor}
+          onChangeColor={logic.handleChangeColor}
         />
 
         <Enregistrement 
+          isLoggedIn={logic.isLoggedIn}
           actionState={logic.actionState} setActionState={logic.setActionState}
           dateAscension={logic.dateAscension} setDateAscension={logic.setDateAscension}
           rating={logic.rating} setRating={logic.setRating}
           comment={logic.comment} setComment={logic.setComment}
           isSubmitting={logic.isSubmitting} onSubmit={logic.handleSubmitAscension}
           myAscensionId={logic.myAscensionId}
+          // (Si tu as encore markerColor/setMarkerColor ici, tu peux les enlever de EnregistrementProps et de ce composant)
         />
 
         <Notes 

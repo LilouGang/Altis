@@ -1,41 +1,41 @@
-import { Mountain, ArrowUpRight, Maximize2 } from 'lucide-react';
+"use client";
+import { Mountain, TrendingUp, ArrowUpRight, Globe } from 'lucide-react';
+import { DashboardStats } from '../logic/dashboard.selectors';
 
-export default function DashboardStats({ stats }: { stats: any }) {
+export default function Statistiques({ stats }: { stats: DashboardStats }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-      
-      <div className="bg-white p-6 rounded-4xl border border-neutral-100/80 shadow-[0_2px_10px_rgb(0,0,0,0.02)] flex flex-col justify-between h-36 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-        <div className="flex items-center gap-2 text-neutral-400">
+    <div className="mb-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="bg-white p-5 rounded-3xl border border-neutral-100 shadow-sm flex flex-col gap-2">
+        <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1">
           <Mountain size={16} strokeWidth={2.5} />
-          <span className="text-sm font-medium">Sommets gravis</span>
         </div>
-        <div className="text-5xl font-bold text-neutral-800 tracking-tight leading-none">
-          {stats.totalSummits}
-        </div>
+        <span className="text-2xl font-black text-neutral-900 leading-none">{stats.totalSommets}</span>
+        <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Sommets</span>
       </div>
 
-      <div className="bg-white p-6 rounded-4xl border border-neutral-100/80 shadow-[0_2px_10px_rgb(0,0,0,0.02)] flex flex-col justify-between h-36 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-        <div className="flex items-center gap-2 text-neutral-400">
+      <div className="bg-white p-5 rounded-3xl border border-neutral-100 shadow-sm flex flex-col gap-2">
+        <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-1">
+          <TrendingUp size={16} strokeWidth={2.5} />
+        </div>
+        <span className="text-2xl font-black text-neutral-900 leading-none">{stats.altitudeTotale.toLocaleString('fr-FR')} <span className="text-sm">m</span></span>
+        <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Dénivelé total</span>
+      </div>
+
+      <div className="bg-white p-5 rounded-3xl border border-neutral-100 shadow-sm flex flex-col gap-2">
+        <div className="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-1">
           <ArrowUpRight size={16} strokeWidth={2.5} />
-          <span className="text-sm font-medium">Dénivelé cumulé</span>
         </div>
-        <div className="text-5xl font-bold text-neutral-800 tracking-tight leading-none flex items-baseline gap-1">
-          {stats.totalAscent.toLocaleString('fr-FR')}
-          <span className="text-xl font-semibold text-neutral-400">m</span>
-        </div>
+        <span className="text-2xl font-black text-neutral-900 leading-none">{stats.sommetLePlusHaut?.altitude?.toLocaleString('fr-FR') || 0} <span className="text-sm">m</span></span>
+        <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider truncate">Record alti.</span>
       </div>
 
-      <div className="bg-white p-6 rounded-4xl border border-neutral-100/80 shadow-[0_2px_10px_rgb(0,0,0,0.02)] flex flex-col justify-between h-36 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-        <div className="flex items-center gap-2 text-neutral-400">
-          <Maximize2 size={16} strokeWidth={2.5} />
-          <span className="text-sm font-medium">Altitude record</span>
+      <div className="bg-white p-5 rounded-3xl border border-neutral-100 shadow-sm flex flex-col gap-2">
+        <div className="w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mb-1">
+          <Globe size={16} strokeWidth={2.5} />
         </div>
-        <div className="text-5xl font-bold text-neutral-800 tracking-tight leading-none flex items-baseline gap-1">
-          {stats.maxAltitude.toLocaleString('fr-FR')}
-          <span className="text-xl font-semibold text-neutral-400">m</span>
-        </div>
+        <span className="text-2xl font-black text-neutral-900 leading-none">{stats.pays.totalUniques}</span>
+        <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Pays explorés</span>
       </div>
-
     </div>
   );
 }

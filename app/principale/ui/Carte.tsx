@@ -36,6 +36,7 @@ export default function Carte({
   const handleZoomOut = () => mapRef.current?.flyTo({ zoom: viewState.zoom - 1, duration: 400 });
   const handleResetNorth = () => mapRef.current?.easeTo({ bearing: 0, duration: 800 });
   const handleToggle3D = () => mapRef.current?.easeTo({ pitch: viewState.pitch === 0 ? 60 : 0, duration: 800 });
+  
   const handleMapClick = useCallback((event: any) => {
     const feature = event.features && event.features[0];
     
@@ -126,7 +127,7 @@ export default function Carte({
 
         <Source id="mes-sommets-source" type="geojson" data={geojsonSommets as any}>
           <Layer id="mes-sommets-layer" type="circle" paint={{
-            'circle-color': '#10b981', 
+            'circle-color': ['coalesce', ['get', 'couleur'], '#10b981'], 
             'circle-radius': 6,
             'circle-stroke-width': 2,
             'circle-stroke-color': '#ffffff'

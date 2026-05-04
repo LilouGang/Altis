@@ -1,8 +1,10 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { MousePointerClick, PlusCircle, Check, MountainSnow } from 'lucide-react';
+import { MousePointerClick, PlusCircle, Check, MountainSnow, Lock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { SommetCarte } from '../logic/principale.selectors';
+// 👇 1. On importe l'auth
+import { useAuth } from '../../shared/lib/AuthContext'; 
 
 interface PopupProps {
   sommet: SommetCarte;
@@ -13,6 +15,8 @@ interface PopupProps {
 export default function PopupFiche({ sommet, dejaEnregistre = false, onAdd }: PopupProps) {
   const [wikiImage, setWikiImage] = useState<string | null>(null);
   const router = useRouter();
+  // 👇 2. On récupère l'utilisateur
+  const { user } = useAuth(); 
 
   useEffect(() => {
     if (!sommet.image_couverture_url) {
@@ -35,7 +39,12 @@ export default function PopupFiche({ sommet, dejaEnregistre = false, onAdd }: Po
 
   const handleAddClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onAdd && !dejaEnregistre) onAdd();
+    // 👇 3. Logique de redirection si non connecté
+    if (!user) {
+      router.push('/compte');
+    } else if (onAdd && !dejaEnregistre) {
+      onAdd();
+    }
   };
 
   const ContenuVisuel = (
@@ -73,6 +82,21 @@ export default function PopupFiche({ sommet, dejaEnregistre = false, onAdd }: Po
     </div>
   );
 
+  // 👇 4. Gestion des styles du bouton selon l'état
+  let buttonClass = "";
+  let buttonContent = null;
+
+  if (!user) {
+    buttonClass = "bg-red-50 hover:bg-red-100 text-red-500";
+    buttonContent = <><Lock size={16} /> Connectez-vous pour ajouter</>;
+  } else if (dejaEnregistre) {
+    buttonClass = "bg-emerald-500 text-white cursor-default";
+    buttonContent = <><Check size={16} strokeWidth={3} /> Déjà dans le carnet</>;
+  } else {
+    buttonClass = "bg-blue-50 hover:bg-blue-100 text-blue-600";
+    buttonContent = <><PlusCircle size={16} /> Ajouter au carnet</>;
+  }
+
   return (
     <div 
       onClick={handleNavigation}
@@ -86,12 +110,10 @@ export default function PopupFiche({ sommet, dejaEnregistre = false, onAdd }: Po
       {ContenuVisuel}
       <button 
         onClick={handleAddClick}
-        disabled={dejaEnregistre}
-        className={`mt-3 w-full py-2 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all relative z-10 ${
-          dejaEnregistre ? 'bg-emerald-500 text-white cursor-default' : 'bg-blue-50 hover:bg-blue-100 text-blue-600'
-        }`}
+        disabled={!!user && dejaEnregistre}
+        className={`mt-3 w-full py-2 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all relative z-10 ${buttonClass}`}
       >
-        {dejaEnregistre ? <><Check size={16} strokeWidth={3} /> Déjà dans le carnet</> : <><PlusCircle size={16} /> Ajouter au carnet</>}
+        {buttonContent}
       </button>
     </div>
   );

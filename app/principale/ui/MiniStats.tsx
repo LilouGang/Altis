@@ -1,6 +1,6 @@
 "use client";
 import { useState } from 'react';
-import { Mountain, TrendingUp, MapPin } from 'lucide-react';
+import { Mountain, TrendingUp } from 'lucide-react';
 import { SommetCarte } from '../logic/principale.selectors';
 
 interface QuickStatsProps {
@@ -41,16 +41,8 @@ export default function QuickStats({ sommets = [] }: QuickStatsProps) {
     setActiveIndex((current) => (current + 1) % slides.length);
   };
 
-  if (sommets.length === 0) {
-    return (
-      <div className="absolute top-20 right-4 z-50 pointer-events-auto">
-        <div className="bg-white/80 backdrop-blur-md border border-neutral-200/50 shadow-sm rounded-2xl w-36 h-12 flex justify-center items-center gap-2">
-          <MapPin size={16} className="text-neutral-400" />
-          <div className="text-xs font-medium text-neutral-500">Carnet vide</div>
-        </div>
-      </div>
-    );
-  }
+  // On enlève la condition "if (sommets.length === 0)" qui retournait la petite pilule.
+  // Maintenant, si la liste est vide, ça affichera la slide "Sommets" avec "0", comme prévu.
 
   return (
     <div 
