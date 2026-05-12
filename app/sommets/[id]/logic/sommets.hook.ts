@@ -2,8 +2,11 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "../../../shared/lib/AuthContext";
 import { SommetCarte } from "../../../principale/logic/principale.selectors";
-import { getSummitFromCarnet, getCommunityReviews, fetchWikipediaData } from "../data/sommets.service";
-import { submitAscensionData, updateMarkerColor } from "./sommets.actions";
+import { 
+  getSummitFromCarnet, getCommunityReviews, fetchWikipediaData, 
+  saveAscension, updateMarkerColorInDb, 
+  removeAscension, removeReview // 👈 Imports ajoutés
+} from "../data/sommets.service";
 import { calculateSummitStats, sortAscensions } from "./sommets.selectors";
 
 export function useSommets(summitId: string) {
@@ -64,7 +67,7 @@ export function useSommets(summitId: string) {
         const allReviews = await getCommunityReviews(cleanSummitId);
         setReviews(allReviews);
       } catch (error) {
-        console.error(error);
+        console.error("Erreur chargement page sommet:", error);
       } finally {
         setLoading(false);
       }
@@ -74,15 +77,13 @@ export function useSommets(summitId: string) {
 
   const handleSubmitAscension = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sommet || rating === 0) return alert("Veuillez donner une note.");
+    if (!sommet) return; // On autorise désormais de valider avec 0 étoile
     if (currentUserId === "non_connecte") return alert("Vous devez être connecté.");
     
     setIsSubmitting(true);
 
     try {
       const docId = `${currentUserId}_${cleanSummitId}`;
-      const isUpdate = myAscensionId !== null;
-      
       const newSummitData: SommetCarte = {
         ...sommet,
         id: cleanSummitId,
@@ -94,7 +95,7 @@ export function useSommets(summitId: string) {
         commentaire: comment
       };
 
-      await submitAscensionData(isUpdate, docId, newSummitData);
+      await saveAscension(docId, newSummitData);
 
       setMyAscensionId(docId);
       setActionState('done');
@@ -113,13 +114,43 @@ export function useSommets(summitId: string) {
 
   const handleChangeColor = async (newColor: string) => {
     if (!myAscensionId || currentUserId === "non_connecte") return;
-    
     setMarkerColor(newColor);
-    
     try {
-      await updateMarkerColor(myAscensionId, newColor);
+      await updateMarkerColorInDb(myAscensionId, newColor);
     } catch (error) {
       alert("Erreur lors de la sauvegarde de la couleur.");
+    }
+  };
+
+  // 👇 NOUVELLE FONCTION 1 : Supprimer carrément l'ascension du carnet
+  const handleDeleteAscension = async () => {
+    if (!myAscensionId) return;
+    if (window.confirm("Voulez-vous vraiment retirer ce sommet de votre carnet ?")) {
+      try {
+        await removeAscension(myAscensionId);
+        setMyAscensionId(null);
+        setActionState('prompt');
+        setRating(0);
+        setComment("");
+        setReviews(prev => prev.filter(r => r.userId !== currentUserId));
+      } catch (error) {
+        alert("Erreur lors de la suppression du sommet.");
+      }
+    }
+  };
+
+  // 👇 NOUVELLE FONCTION 2 : Supprimer juste l'avis
+  const handleDeleteReview = async () => {
+    if (!myAscensionId) return;
+    if (window.confirm("Voulez-vous supprimer votre note et votre récit public ?")) {
+      try {
+        await removeReview(myAscensionId);
+        setRating(0);
+        setComment("");
+        setReviews(prev => prev.map(r => r.userId === currentUserId ? { ...r, note: 0, commentaire: "" } : r));
+      } catch (error) {
+        alert("Erreur lors de la suppression de l'avis.");
+      }
     }
   };
 
@@ -147,7 +178,7 @@ export function useSommets(summitId: string) {
     myAscensionId,
     stats, sortedAscensions, sortBy, setSortBy,
     isLoggedIn: currentUserId !== "non_connecte",
-    markerColor, 
-    handleChangeColor
+    markerColor, handleChangeColor,
+    handleDeleteAscension, handleDeleteReview // 👈 Export des nouvelles fonctions
   };
 }

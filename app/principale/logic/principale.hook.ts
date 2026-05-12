@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { db } from '../../shared/lib/firebase';
 import { UserStats, Ascension } from '../../shared/types/index';
 import { calculateDashboardStats } from '../../dashboard/logic/dashboard.selectors';
@@ -23,7 +23,29 @@ export function usePrincipale() {
   const [mesSommets, setMesSommets] = useState<SommetCarte[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
 
-  // 📍 1er useEffect : UNIQUEMENT LA GÉOLOCALISATION (Se lance 1 seule fois)
+  const [filtreAltitude, setFiltreAltitude] = useState<number>(0);
+  const [filtrePays, setFiltrePays] = useState<string>("Tous");
+  const [filtreCouleur, setFiltreCouleur] = useState<string>("Toutes");
+
+  const optionsPays = useMemo(() => {
+    const pays = new Set(mesSommets.map(s => s.pays).filter(Boolean));
+    return ["Tous", ...Array.from(pays)] as string[];
+  }, [mesSommets]);
+
+  const optionsCouleurs = useMemo(() => {
+    const couleurs = new Set(mesSommets.map(s => s.couleur || "#10b981"));
+    return ["Toutes", ...Array.from(couleurs)] as string[];
+  }, [mesSommets]);
+
+  const sommetsFiltres = useMemo(() => {
+    return mesSommets.filter(s => {
+      if (filtreAltitude > 0 && (s.altitude || 0) < filtreAltitude) return false;
+      if (filtrePays !== "Tous" && s.pays !== filtrePays) return false;
+      if (filtreCouleur !== "Toutes" && (s.couleur || "#10b981") !== filtreCouleur) return false;
+      return true;
+    });
+  }, [mesSommets, filtreAltitude, filtrePays, filtreCouleur]);
+
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition((position) => {
@@ -38,9 +60,8 @@ export function usePrincipale() {
         console.warn("Géolocalisation refusée ou ignorée :", error);
       });
     }
-  }, []); // 👈 Le tableau vide est crucial ici !
+  }, []);
 
-  // ☁️ 2ème useEffect : UNIQUEMENT FIREBASE (Se relance quand on se connecte/déconnecte)
   useEffect(() => {
     async function loadData() {
       if (currentUserId !== "non_connecte") {
@@ -103,6 +124,13 @@ export function usePrincipale() {
     viewState, setViewState,
     popupInfo, setPopupInfo,
     mesSommets,
+    sommetsFiltres,
+    filtres: {
+      altitude: filtreAltitude, setAltitude: setFiltreAltitude,
+      pays: filtrePays, setPays: setFiltrePays,
+      couleur: filtreCouleur, setCouleur: setFiltreCouleur,
+      optionsPays, optionsCouleurs
+    },
     handleZoomIn, handleZoomOut, handleResetNorth, handleToggle3D,
     userStats,
     handleSelectSearchResult,

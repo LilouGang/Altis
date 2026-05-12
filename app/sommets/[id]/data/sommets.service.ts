@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, query, where, setDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/app/shared/lib/firebase";
 import { SommetCarte } from "../../../principale/logic/principale.selectors";
 
@@ -28,19 +28,23 @@ export const fetchWikipediaData = async (nom: string) => {
   }
 };
 
-export const addAscension = async (docId: string, data: SommetCarte) => {
+export const saveAscension = async (docId: string, data: SommetCarte) => {
   const summitRef = doc(db, 'user_summits', docId);
   await setDoc(summitRef, data, { merge: true });
-  return docId;
 };
 
-export const updateAscension = async (docId: string, data: Partial<SommetCarte>) => {
-  const summitRef = doc(db, 'user_summits', docId);
-  await updateDoc(summitRef, data);
-  return docId;
-};
-
-export const saveMarkerColor = async (docId: string, color: string) => {
+export const updateMarkerColorInDb = async (docId: string, color: string) => {
   const summitRef = doc(db, 'user_summits', docId);
   await updateDoc(summitRef, { couleur: color });
+};
+
+// 👇 NOUVELLES FONCTIONS DE SUPPRESSION
+export const removeAscension = async (docId: string) => {
+  const summitRef = doc(db, 'user_summits', docId);
+  await deleteDoc(summitRef);
+};
+
+export const removeReview = async (docId: string) => {
+  const summitRef = doc(db, 'user_summits', docId);
+  await updateDoc(summitRef, { note: 0, commentaire: "" });
 };

@@ -28,8 +28,7 @@ export default function SommetsPage() {
        <Details 
           sommet={logic.sommet} 
           wiki={logic.wikiData || { description: "Chargement...", image: "" }}
-          // 👇 Nouvelles props pour Details
-          isRecorded={logic.myAscensionId !== null} // On sait s'il est enregistré si on a un ID
+          isRecorded={logic.myAscensionId !== null}
           markerColor={logic.markerColor}
           onChangeColor={logic.handleChangeColor}
         />
@@ -42,7 +41,9 @@ export default function SommetsPage() {
           comment={logic.comment} setComment={logic.setComment}
           isSubmitting={logic.isSubmitting} onSubmit={logic.handleSubmitAscension}
           myAscensionId={logic.myAscensionId}
-          // (Si tu as encore markerColor/setMarkerColor ici, tu peux les enlever de EnregistrementProps et de ce composant)
+          // 👇 Ajout des deux nouvelles fonctions
+          onDeleteAscension={logic.handleDeleteAscension}
+          onDeleteReview={logic.handleDeleteReview}
         />
 
         <Notes 

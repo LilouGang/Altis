@@ -4,7 +4,9 @@ import {
   signOut, 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  updateEmail,
+  updatePassword
 } from "firebase/auth";
 import { auth } from "../../shared/lib/firebase";
 
@@ -48,4 +50,19 @@ export const loginWithEmail = async (email: string, password: string) => {
   } catch (error: any) {
     return { user: null, error: "Email ou mot de passe incorrect." };
   }
+};
+
+export const updateUserDisplayName = async (name: string) => {
+  if (!auth.currentUser) throw new Error("Non connecté");
+  await updateProfile(auth.currentUser, { displayName: name });
+};
+
+export const updateUserEmailAddress = async (email: string) => {
+  if (!auth.currentUser) throw new Error("Non connecté");
+  await updateEmail(auth.currentUser, email);
+};
+
+export const updateUserSecret = async (password: string) => {
+  if (!auth.currentUser) throw new Error("Non connecté");
+  await updatePassword(auth.currentUser, password);
 };

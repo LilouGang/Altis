@@ -2,6 +2,7 @@
 import Carte from "./ui/Carte";
 import QuickStats from "./ui/MiniStats";
 import FloatingSearch from "./ui/Recherche";
+import FiltresCarte from "./ui/FiltresCarte";
 import { usePrincipale } from "./logic/principale.hook";
 
 export default function PrincipalePage() {
@@ -11,6 +12,8 @@ export default function PrincipalePage() {
     userStats,
     handleSelectSearchResult,
     mesSommets,
+    sommetsFiltres,
+    filtres,
     handleAddSummitToProfile
   } = usePrincipale();
 
@@ -22,13 +25,21 @@ export default function PrincipalePage() {
         setViewState={setViewState}
         popupInfo={popupInfo}
         setPopupInfo={setPopupInfo}
-        mesSommets={mesSommets}
+        mesSommets={sommetsFiltres}
         onAddSummit={handleAddSummitToProfile}
       />
       
       <div className="pointer-events-none absolute inset-0 z-40 *:pointer-events-auto">
         
-        <QuickStats sommets={mesSommets} />
+        <QuickStats sommets={sommetsFiltres} />
+        
+        <div className="absolute left-1/2 -translate-x-1/2 z-50">
+          <FiltresCarte 
+            filtres={filtres} 
+            totalAffiches={sommetsFiltres.length} 
+          />
+        </div>
+
         <FloatingSearch onSelectSommet={handleSelectSearchResult} />
 
       </div>

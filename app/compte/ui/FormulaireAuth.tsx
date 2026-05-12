@@ -48,7 +48,7 @@ export default function FormulaireAuth() {
             placeholder="Votre pseudo (ex: Alpiniste_Du_74)" 
             value={pseudo} 
             onChange={(e) => setPseudo(e.target.value)}
-            className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all font-medium"
+            className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-neutral-900 font-bold placeholder:text-neutral-500 placeholder:font-medium"
             required
           />
         )}
@@ -57,7 +57,7 @@ export default function FormulaireAuth() {
           placeholder="Adresse email" 
           value={email} 
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all font-medium"
+          className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-neutral-900 font-bold placeholder:text-neutral-500 placeholder:font-medium"
           required
         />
         <input 
@@ -65,7 +65,7 @@ export default function FormulaireAuth() {
           placeholder="Mot de passe" 
           value={password} 
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all font-medium"
+          className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-neutral-900 font-bold placeholder:text-neutral-500 placeholder:font-medium"
           required
         />
 

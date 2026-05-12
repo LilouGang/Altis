@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Star, MapPin, Check, Edit2, Lock } from "lucide-react";
+import { Star, MapPin, Check, Edit2, Lock, Trash2, MessageSquareX } from "lucide-react";
 import Link from "next/link";
 
 interface EnregistrementProps {
@@ -15,18 +15,21 @@ interface EnregistrementProps {
   isSubmitting: boolean;
   onSubmit: (e: React.FormEvent) => void;
   myAscensionId: string | null;
-  // Les props markerColor et setMarkerColor ont bien été supprimées d'ici !
+  // 👇 Ajout des propriétés pour la suppression
+  onDeleteAscension: () => void;
+  onDeleteReview: () => void;
 }
 
 export default function Enregistrement({
   isLoggedIn, actionState, setActionState, dateAscension, setDateAscension, rating, setRating,
-  comment, setComment, isSubmitting, onSubmit, myAscensionId
+  comment, setComment, isSubmitting, onSubmit, myAscensionId,
+  onDeleteAscension, onDeleteReview
 }: EnregistrementProps) {
   const [hoverRating, setHoverRating] = useState(0);
 
   if (!isLoggedIn) {
     return (
-      <div className="bg-white rounded-4xl border border-neutral-200 shadow-sm p-12 mb-8 text-center transition-all flex flex-col items-center">
+      <div className="bg-white rounded-[40px] border border-neutral-200 shadow-sm p-12 mb-8 text-center transition-all flex flex-col items-center">
         <Lock size={32} className="text-neutral-300 mb-4" />
         <h3 className="text-lg font-bold text-neutral-900 mb-1">Carnet privé</h3>
         <p className="text-sm text-neutral-500 mb-6 max-w-sm">
@@ -40,7 +43,7 @@ export default function Enregistrement({
   }
 
   return (
-    <div className="bg-white rounded-4xl border border-neutral-200 shadow-sm p-8 mb-8 transition-all">
+    <div className="bg-white rounded-[40px] border border-neutral-200 shadow-sm p-8 mb-8 transition-all">
       
       {actionState === 'prompt' && (
         <div className="text-center">
@@ -88,19 +91,35 @@ export default function Enregistrement({
       )}
 
       {actionState === 'done' && (
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in duration-300">
+        <div className="flex flex-col gap-4 animate-in fade-in duration-300">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-full flex items-center justify-center shrink-0 shadow-sm border border-emerald-100 bg-emerald-50">
               <Check size={20} className="text-emerald-500" />
             </div>
             <div>
-              <h3 className="font-bold text-neutral-900">Ascension enregistrée</h3>
-              <p className="text-xs text-neutral-500 mt-0.5">Fait le {new Date(dateAscension).toLocaleDateString('fr-FR')} • Évalué {rating}/5</p>
+              <h3 className="font-bold text-neutral-900">Dans votre carnet</h3>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Fait le {new Date(dateAscension).toLocaleDateString('fr-FR')} 
+                {rating > 0 ? ` • Évalué ${rating}/5` : ''}
+              </p>
             </div>
           </div>
-          <button onClick={() => setActionState('form')} className="flex items-center gap-2 px-4 py-2 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 text-neutral-700 text-sm font-bold rounded-xl transition-colors">
-            <Edit2 size={14} /> Modifier mon avis
-          </button>
+          
+          <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-neutral-100 mt-2">
+            <button onClick={() => setActionState('form')} className="flex items-center gap-2 px-4 py-2 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 text-neutral-700 text-sm font-bold rounded-xl transition-colors">
+              <Edit2 size={14} /> {rating > 0 || comment ? "Modifier l'avis" : "Ajouter un avis"}
+            </button>
+            
+            {(rating > 0 || comment !== "") && (
+              <button onClick={onDeleteReview} className="flex items-center gap-2 px-4 py-2 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-sm font-bold rounded-xl transition-colors">
+                <MessageSquareX size={14} /> Supprimer l'avis
+              </button>
+            )}
+
+            <button onClick={onDeleteAscension} className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-sm font-bold rounded-xl transition-colors md:ml-auto">
+              <Trash2 size={14} /> Retirer du carnet
+            </button>
+          </div>
         </div>
       )}
     </div>
