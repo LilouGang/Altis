@@ -14,4 +14,5 @@ export interface SommetCarte {
   commentaire?: string;
   dateAjout?: string;
   userId?: string;
+  userPseudo?: string;
 }

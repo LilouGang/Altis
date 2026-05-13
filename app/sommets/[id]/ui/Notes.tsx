@@ -1,4 +1,5 @@
-import { Star, ChevronDown } from "lucide-react";
+import { Star, ChevronDown, User } from "lucide-react";
+import Link from "next/link";
 import { Ascension } from "../../../shared/types";
 
 interface NotesProps {
@@ -6,18 +7,19 @@ interface NotesProps {
   sortedAscensions: Ascension[];
   sortBy: 'recent' | 'rating';
   setSortBy: (val: 'recent' | 'rating') => void;
+  currentUserId: string;
 }
 
-export default function Notes({ stats, sortedAscensions, sortBy, setSortBy }: NotesProps) {
+export default function Notes({ stats, sortedAscensions, sortBy, setSortBy, currentUserId }: NotesProps) {
   return (
-    <div className="bg-white rounded-4xl border border-neutral-200 shadow-sm p-8">
+    <div className="bg-white rounded-4xl border border-neutral-200 shadow-sm p-8 mt-8">
       <h2 className="text-xl font-black text-neutral-900 mb-8 border-b border-neutral-100 pb-4">Carnet de la communauté</h2>
 
       {stats.total === 0 ? (
-        <p className="text-sm font-medium text-neutral-500 italic text-center py-8">Aucun avis pour le moment. Soyez le premier !</p>
+        <p className="text-sm font-medium text-neutral-500 italic text-center py-8">Aucun avis pour le moment.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
-          {/* Colonne Stats */}
+          {/* Colonne Stats (Design Original) */}
           <div className="md:col-span-4 flex flex-col gap-3">
             <div className="flex items-baseline gap-2 mb-2">
               <span className="text-5xl font-black text-neutral-900 tracking-tighter">{stats.avg}</span>
@@ -37,9 +39,9 @@ export default function Notes({ stats, sortedAscensions, sortBy, setSortBy }: No
                 );
               })}
             </div>
-            <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-2">{stats.total} avis</p>
           </div>
 
+          {/* Colonne Récits (Design Original) */}
           <div className="md:col-span-8">
             <div className="flex justify-between items-center mb-6">
               <span className="text-sm font-bold text-neutral-900">Récits</span>
@@ -53,23 +55,33 @@ export default function Notes({ stats, sortedAscensions, sortBy, setSortBy }: No
             </div>
 
             <div className="flex flex-col gap-6">
-              {sortedAscensions.map((asc) => (
-                <div key={asc.id} className="flex flex-col gap-2 pb-6 border-b border-neutral-100 last:border-0">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: asc.customColor, boxShadow: `0 0 0 2px white, 0 0 0 4px ${asc.customColor}` }}></div>
-                      <span className="text-sm font-bold text-neutral-900">Alpiniste Anonyme</span>
+              {sortedAscensions.map((asc) => {
+                const isMe = asc.userId === currentUserId;
+                const pseudo = (asc as any).userPseudo || "Utilisateur";
+                
+                return (
+                  <div key={asc.id} className="flex flex-col gap-2 pb-6 border-b border-neutral-100 last:border-0">
+                    <div className="flex items-center justify-between">
+                      <Link 
+                        href={isMe ? "/dashboard" : `/utilisateur/${asc.userId}`}
+                        className="flex items-center gap-2.5 group"
+                      >
+                        <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: asc.customColor, boxShadow: `0 0 0 2px white, 0 0 0 4px ${asc.customColor}` }}></div>
+                        <span className="text-sm font-bold text-neutral-900 group-hover:text-emerald-600 transition-colors">
+                          {isMe ? `Moi (${pseudo})` : pseudo}
+                        </span>
+                      </Link>
+                      <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">{new Date(asc.dateAscension).toLocaleDateString('fr-FR')}</span>
                     </div>
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">{new Date(asc.dateAscension).toLocaleDateString('fr-FR')}</span>
+                    <div className="flex gap-0.5">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star key={s} size={14} className={s <= asc.rating ? "text-amber-400 fill-amber-400" : "text-neutral-200"} />
+                      ))}
+                    </div>
+                    {asc.comment && <p className="text-sm text-neutral-600 font-medium leading-relaxed mt-1">{asc.comment}</p>}
                   </div>
-                  <div className="flex gap-0.5">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <Star key={s} size={14} className={s <= asc.rating ? "text-amber-400 fill-amber-400" : "text-neutral-200"} />
-                    ))}
-                  </div>
-                  {asc.comment && <p className="text-sm text-neutral-600 font-medium leading-relaxed mt-1">{asc.comment}</p>}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

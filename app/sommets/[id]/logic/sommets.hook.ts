@@ -92,7 +92,8 @@ export function useSommets(summitId: string) {
         statut: 'fait',
         couleur: markerColor,
         note: rating,
-        commentaire: comment
+        commentaire: comment,
+        userPseudo: user?.displayName || "Utilisateur"
       };
 
       await saveAscension(docId, newSummitData);
@@ -122,35 +123,29 @@ export function useSommets(summitId: string) {
     }
   };
 
-  // 👇 NOUVELLE FONCTION 1 : Supprimer carrément l'ascension du carnet
   const handleDeleteAscension = async () => {
     if (!myAscensionId) return;
-    if (window.confirm("Voulez-vous vraiment retirer ce sommet de votre carnet ?")) {
-      try {
-        await removeAscension(myAscensionId);
-        setMyAscensionId(null);
-        setActionState('prompt');
-        setRating(0);
-        setComment("");
-        setReviews(prev => prev.filter(r => r.userId !== currentUserId));
-      } catch (error) {
-        alert("Erreur lors de la suppression du sommet.");
-      }
+    try {
+      await removeAscension(myAscensionId);
+      setMyAscensionId(null);
+      setActionState('prompt');
+      setRating(0);
+      setComment("");
+      setReviews(prev => prev.filter(r => r.userId !== currentUserId));
+    } catch (error) {
+      alert("Erreur lors de la suppression du sommet.");
     }
   };
 
-  // 👇 NOUVELLE FONCTION 2 : Supprimer juste l'avis
   const handleDeleteReview = async () => {
     if (!myAscensionId) return;
-    if (window.confirm("Voulez-vous supprimer votre note et votre récit public ?")) {
-      try {
-        await removeReview(myAscensionId);
-        setRating(0);
-        setComment("");
-        setReviews(prev => prev.map(r => r.userId === currentUserId ? { ...r, note: 0, commentaire: "" } : r));
-      } catch (error) {
-        alert("Erreur lors de la suppression de l'avis.");
-      }
+    try {
+      await removeReview(myAscensionId);
+      setRating(0);
+      setComment("");
+      setReviews(prev => prev.map(r => r.userId === currentUserId ? { ...r, note: 0, commentaire: "" } : r));
+    } catch (error) {
+      alert("Erreur lors de la suppression de l'avis.");
     }
   };
 
@@ -158,11 +153,12 @@ export function useSommets(summitId: string) {
     .filter(r => r.note && r.note > 0)
     .map(r => ({
       id: r.id,
-      userId: r.userId || 'Alpiniste',
+      userId: r.userId || 'Utilisateur', // 👈 On harmonise ici aussi
       rating: r.note || 0,
       comment: r.commentaire || "",
       dateAscension: r.dateAjout || new Date().toISOString(),
-      customColor: r.couleur || "#10b981"
+      customColor: r.couleur || "#10b981",
+      userPseudo: (r as any).userPseudo // 👈 On n'oublie pas de le faire passer à Notes.tsx !
     }));
 
   const stats = calculateSummitStats(mappedReviews as any);

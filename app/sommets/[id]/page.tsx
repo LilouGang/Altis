@@ -41,7 +41,6 @@ export default function SommetsPage() {
           comment={logic.comment} setComment={logic.setComment}
           isSubmitting={logic.isSubmitting} onSubmit={logic.handleSubmitAscension}
           myAscensionId={logic.myAscensionId}
-          // 👇 Ajout des deux nouvelles fonctions
           onDeleteAscension={logic.handleDeleteAscension}
           onDeleteReview={logic.handleDeleteReview}
         />
@@ -49,9 +48,9 @@ export default function SommetsPage() {
         <Notes 
           stats={logic.stats}
           sortedAscensions={logic.sortedAscensions}
-          sortBy={logic.sortBy} setSortBy={logic.setSortBy}
+          sortBy={logic.sortBy} setSortBy={logic.setSortBy} 
+          currentUserId={""}        
         />
-
       </div>
     </div>
   );

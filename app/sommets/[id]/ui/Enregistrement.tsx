@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Star, MapPin, Check, Edit2, Lock, Trash2, MessageSquareX } from "lucide-react";
+import { Star, MapPin, Check, Edit2, Lock, Trash2, MessageSquareX, X } from "lucide-react";
 import Link from "next/link";
 
 interface EnregistrementProps {
@@ -15,7 +15,6 @@ interface EnregistrementProps {
   isSubmitting: boolean;
   onSubmit: (e: React.FormEvent) => void;
   myAscensionId: string | null;
-  // 👇 Ajout des propriétés pour la suppression
   onDeleteAscension: () => void;
   onDeleteReview: () => void;
 }
@@ -26,6 +25,10 @@ export default function Enregistrement({
   onDeleteAscension, onDeleteReview
 }: EnregistrementProps) {
   const [hoverRating, setHoverRating] = useState(0);
+  
+  // 👇 États pour gérer la confirmation implicite
+  const [confirmAscension, setConfirmAscension] = useState(false);
+  const [confirmReview, setConfirmReview] = useState(false);
 
   if (!isLoggedIn) {
     return (
@@ -97,28 +100,68 @@ export default function Enregistrement({
               <Check size={20} className="text-emerald-500" />
             </div>
             <div>
-              <h3 className="font-bold text-neutral-900">Dans votre carnet</h3>
-              <p className="text-xs text-neutral-500 mt-0.5">
-                Fait le {new Date(dateAscension).toLocaleDateString('fr-FR')} 
-                {rating > 0 ? ` • Évalué ${rating}/5` : ''}
-              </p>
+              <h3 className="font-bold text-neutral-900">Vous avez enregistré ce sommet</h3>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-xs text-neutral-500">Le {new Date(dateAscension).toLocaleDateString('fr-FR')}</p>
+                {rating > 0 && (
+                  <>
+                    <span className="text-neutral-300 text-[10px]">•</span>
+                    <div className="flex gap-0.5">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star key={s} size={10} className={s <= rating ? "text-amber-400 fill-amber-400" : "text-neutral-200"} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           
-          <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-neutral-100 mt-2">
-            <button onClick={() => setActionState('form')} className="flex items-center gap-2 px-4 py-2 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 text-neutral-700 text-sm font-bold rounded-xl transition-colors">
-              <Edit2 size={14} /> {rating > 0 || comment ? "Modifier l'avis" : "Ajouter un avis"}
-            </button>
+          <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2 pt-3 border-t border-neutral-100 mt-2">
             
-            {(rating > 0 || comment !== "") && (
-              <button onClick={onDeleteReview} className="flex items-center gap-2 px-4 py-2 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-sm font-bold rounded-xl transition-colors">
-                <MessageSquareX size={14} /> Supprimer l'avis
+            {/* Si on ne confirme RIEN, on affiche le bouton Modifier */}
+            {!confirmAscension && !confirmReview && (
+              <button onClick={() => setActionState('form')} className="flex items-center gap-2 px-4 py-2 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 text-neutral-700 text-sm font-bold rounded-xl transition-colors">
+                <Edit2 size={14} /> {rating > 0 || comment ? "Modifier l'avis" : "Ajouter un avis"}
               </button>
             )}
+            
+            {/* --- SUPPRESSION DE L'AVIS --- */}
+            {(rating > 0 || comment !== "") && !confirmAscension && (
+              confirmReview ? (
+                <div className="flex items-center gap-2 animate-in slide-in-from-left-4">
+                  <button onClick={() => { onDeleteReview(); setConfirmReview(false); }} className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm">
+                    <MessageSquareX size={14} /> Confirmer la suppression
+                  </button>
+                  <button onClick={() => setConfirmReview(false)} className="flex items-center gap-2 px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 text-sm font-bold rounded-xl transition-colors">
+                    <X size={14} /> Annuler
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmReview(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-sm font-bold rounded-xl transition-colors">
+                  <MessageSquareX size={14} /> Supprimer l'avis
+                </button>
+              )
+            )}
 
-            <button onClick={onDeleteAscension} className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-sm font-bold rounded-xl transition-colors md:ml-auto">
-              <Trash2 size={14} /> Retirer du carnet
-            </button>
+            {/* --- SUPPRESSION DE L'ASCENSION --- */}
+            {!confirmReview && (
+              confirmAscension ? (
+                <div className="flex items-center gap-2 sm:ml-auto animate-in slide-in-from-right-4">
+                  <button onClick={() => setConfirmAscension(false)} className="flex items-center gap-2 px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 text-sm font-bold rounded-xl transition-colors">
+                    <X size={14} /> Annuler
+                  </button>
+                  <button onClick={() => { onDeleteAscension(); setConfirmAscension(false); }} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm">
+                    <Trash2 size={14} /> Confirmer la suppression
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmAscension(true)} className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-sm font-bold rounded-xl transition-colors sm:ml-auto">
+                  <Trash2 size={14} /> Retirer du carnet
+                </button>
+              )
+            )}
+
           </div>
         </div>
       )}
