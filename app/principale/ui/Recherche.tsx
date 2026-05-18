@@ -122,7 +122,7 @@ export default function FloatingSearch({ onSelectSommet }: FloatingSearchProps) 
   const showMenu = isOpen && (results.length > 0 || isLoading);
 
   return (
-    <div ref={searchRef} className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl z-40">
+    <div ref={searchRef} className="fixed bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 w-[92%] md:w-[90%] max-w-2xl z-40">
       <div className="relative flex flex-col justify-end">
         
         <div 

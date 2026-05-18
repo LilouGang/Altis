@@ -14,19 +14,20 @@ interface FiltresCarteProps {
 
 export default function FiltresCarte({ filtres, totalAffiches }: FiltresCarteProps) {
   return (
-    <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-white/90 backdrop-blur-md p-2 rounded-2xl shadow-lg border border-neutral-200/50 animate-in slide-in-from-top-4 duration-500 overflow-x-auto max-w-[90vw]">
+    // 📱 Sur mobile : Alignement à gauche avec scroll. Sur PC : Centré au milieu.
+    <div className="absolute top-20 left-2 md:left-1/2 md:-translate-x-1/2 z-10 flex items-center gap-2 bg-white/90 backdrop-blur-md p-1.5 md:p-2 rounded-2xl shadow-lg border border-neutral-200/50 animate-in slide-in-from-top-4 duration-500 overflow-x-auto max-w-[calc(100vw-110px)] md:max-w-[90vw] scrollbar-hide">
       
-      <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-neutral-100 text-neutral-500 shrink-0 ml-1">
+      <div className="hidden md:flex items-center justify-center w-8 h-8 rounded-xl bg-neutral-100 text-neutral-500 shrink-0 ml-1">
         <Filter size={16} strokeWidth={2.5} />
       </div>
 
       {/* Filtre Altitude */}
-      <div className="relative flex items-center bg-neutral-50 rounded-xl px-3 py-1.5 border border-neutral-100 shrink-0 hover:bg-neutral-100 transition-colors">
-        <Mountain size={14} className="text-neutral-400 mr-2" />
+      <div className="relative flex items-center bg-neutral-50 rounded-lg md:rounded-xl px-2 py-1.5 md:px-3 border border-neutral-100 shrink-0 hover:bg-neutral-100 transition-colors">
+        <Mountain size={14} className="text-neutral-400 mr-1.5 md:mr-2" />
         <select 
           value={filtres.altitude} 
           onChange={(e) => filtres.setAltitude(Number(e.target.value))}
-          className="bg-transparent text-sm font-bold text-neutral-700 outline-none cursor-pointer appearance-none pr-4"
+          className="bg-transparent text-xs md:text-sm font-bold text-neutral-700 outline-none cursor-pointer appearance-none pr-3 md:pr-4"
         >
           <option value={0}>Toutes</option>
           <option value={2000}>&gt; 2 000 m</option>
@@ -36,12 +37,12 @@ export default function FiltresCarte({ filtres, totalAffiches }: FiltresCartePro
       </div>
 
       {/* Filtre Pays */}
-      <div className="relative flex items-center bg-neutral-50 rounded-xl px-3 py-1.5 border border-neutral-100 shrink-0 hover:bg-neutral-100 transition-colors">
-        <MapPin size={14} className="text-neutral-400 mr-2" />
+      <div className="relative flex items-center bg-neutral-50 rounded-lg md:rounded-xl px-2 py-1.5 md:px-3 border border-neutral-100 shrink-0 hover:bg-neutral-100 transition-colors">
+        <MapPin size={14} className="text-neutral-400 mr-1.5 md:mr-2" />
         <select 
           value={filtres.pays} 
           onChange={(e) => filtres.setPays(e.target.value)}
-          className="bg-transparent text-sm font-bold text-neutral-700 outline-none cursor-pointer appearance-none pr-4"
+          className="bg-transparent text-xs md:text-sm font-bold text-neutral-700 outline-none cursor-pointer appearance-none pr-3 md:pr-4"
         >
           {filtres.optionsPays.map(p => (
             <option key={p} value={p}>{p}</option>
@@ -50,12 +51,12 @@ export default function FiltresCarte({ filtres, totalAffiches }: FiltresCartePro
       </div>
 
       {/* Filtre Couleur */}
-      <div className="relative flex items-center bg-neutral-50 rounded-xl px-3 py-1.5 border border-neutral-100 shrink-0 hover:bg-neutral-100 transition-colors">
-        <Palette size={14} className="text-neutral-400 mr-2" />
+      <div className="relative flex items-center bg-neutral-50 rounded-lg md:rounded-xl px-2 py-1.5 md:px-3 border border-neutral-100 shrink-0 hover:bg-neutral-100 transition-colors">
+        <Palette size={14} className="text-neutral-400 mr-1.5 md:mr-2" />
         <select 
           value={filtres.couleur} 
           onChange={(e) => filtres.setCouleur(e.target.value)}
-          className="bg-transparent text-sm font-bold text-neutral-700 outline-none cursor-pointer appearance-none pr-4"
+          className="bg-transparent text-xs md:text-sm font-bold text-neutral-700 outline-none cursor-pointer appearance-none pr-3 md:pr-4"
         >
           <option value="Toutes">Toutes</option>
           {filtres.optionsCouleurs.filter(c => c !== "Toutes").map(c => (

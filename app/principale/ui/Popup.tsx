@@ -100,7 +100,7 @@ export default function PopupFiche({ sommet, dejaEnregistre = false, onAdd }: Po
   return (
     <div 
       onClick={handleNavigation}
-      className={`block w-85 p-2.5 bg-white rounded-2xl shadow-xl border transition-all group cursor-pointer relative ${
+      className={`block w-[85vw] sm:w-85 p-2.5 bg-white rounded-2xl shadow-xl border transition-all group cursor-pointer relative ${
         dejaEnregistre ? 'border-emerald-100 hover:border-emerald-500' : 'border-neutral-200 hover:border-blue-500'
       }`}
     >
