@@ -18,7 +18,7 @@ export const viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
-      <body className="h-screen w-screen overflow-hidden bg-neutral-900 antialiased">
+      <body className="h-dvh w-screen overflow-hidden bg-neutral-900 antialiased">
         <AuthProvider>
           <Header />
           <main className="h-full w-full overflow-y-auto">
