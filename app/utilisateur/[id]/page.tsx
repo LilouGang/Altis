@@ -36,7 +36,7 @@ export default function ProfilPublicPage() {
           <h1 className="text-5xl font-black text-neutral-900 tracking-tighter">{pseudo}</h1>
         </div>
 
-        {/* 1. SECTION STATS (Design Dashboard) */}
+        {/* 1. LES 4 CARTES DE STATS */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="bg-white p-6 rounded-4xl border border-neutral-200 shadow-sm">
             <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4"><Mountain size={20} /></div>
@@ -60,38 +60,35 @@ export default function ProfilPublicPage() {
           </div>
         </div>
 
-        {/* 2. SECTION TROPHÉES (Corrigée) */}
-        <div className="bg-white rounded-4xl border border-neutral-200 shadow-sm overflow-hidden">
-          <div className="p-8">
-            <div className="flex items-center justify-between mb-10">
-              <div>
-                 <h2 className="text-2xl font-black text-neutral-900">Succès débloqués</h2>
-                 <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mt-1">Palmarès des trophées</p>
-              </div>
-              <button 
-                onClick={() => setShowAllTrophees(!showAllTrophees)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-neutral-900 hover:bg-neutral-800 rounded-xl text-xs font-bold text-white transition-all shadow-sm active:scale-95"
-              >
-                {showAllTrophees ? "Réduire" : "Tout afficher"}
-                {showAllTrophees ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              </button>
-            </div>
-
-            {/* Plus de isPreview={true} pour forcer les logos et barres */}
-            <div className={`relative transition-all duration-700 ease-in-out ${showAllTrophees ? "max-h-500" : "max-h-95"} overflow-hidden`}>
-              <div className="category-title-custom">
-                <ListeTrophees 
-                    tropheesGroupes={tropheesGroupes} 
-                    isPreview={false} 
-                />
-              </div>
-              
-              {/* Le dégradé ne s'affiche QUE si c'est fermé */}
-              {!showAllTrophees && (
-                <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-white via-white/80 to-transparent z-10 pointer-events-none" />
-              )}
-            </div>
+        {/* 2. SECTION TROPHÉES */}
+        <div className="bg-white rounded-4xl border border-neutral-200 shadow-sm overflow-hidden flex flex-col">
+          <div className="px-8 pt-8 pb-2">
+             <h2 className="text-2xl font-black text-neutral-900">Succès débloqués</h2>
+             <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mt-1">Palmarès des trophées</p>
           </div>
+
+          <div className={`relative transition-all duration-1000 ease-in-out ${showAllTrophees ? "max-h-1250" : "max-h-112.5"} overflow-hidden px-8`}>
+            <div className="category-title-custom pb-8">
+              <ListeTrophees 
+                  tropheesGroupes={tropheesGroupes} 
+                  isPreview={false} 
+              />
+            </div>
+            
+            {/* Le dégradé ne s'affiche QUE si c'est fermé pour masquer proprement le bas */}
+            {!showAllTrophees && (
+              <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-white via-white/90 to-transparent z-10 pointer-events-none" />
+            )}
+          </div>
+
+          {/* Bouton en bas, façon texte, sans bordure */}
+          <button 
+            onClick={() => setShowAllTrophees(!showAllTrophees)}
+            className="flex items-center justify-center gap-2 w-full pb-6 pt-2 text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors z-20 relative bg-white outline-none"
+          >
+            {showAllTrophees ? "Réduire" : "Voir tout le palmarès"}
+            {showAllTrophees ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </button>
         </div>
 
         {/* 3. SECTION NOTES & AVIS */}
@@ -124,19 +121,23 @@ export default function ProfilPublicPage() {
       </div>
 
       <style jsx global>{`
-        /* Différenciation des sous-titres (Endurance, etc.) par rapport au titre principal */
-        .category-title-custom h3 {
-          font-size: 0.75rem !important;
-          color: #737373 !important; /* Gris moyen, pas trop clair */
-          margin-bottom: 2rem !important;
-          margin-top: 1rem !important;
+        /* CORRECTION MAJEURE ICI : 
+          On cible uniquement les h2 (les catégories "Endurance", "Exploration") 
+          et plus du tout les h3 (les titres des trophées dans les cartes) ! 
+        */
+        .category-title-custom h2 {
+          font-size: 0.8rem !important;
+          color: #737373 !important;
+          margin-bottom: 1.5rem !important;
+          margin-top: 1.5rem !important;
           letter-spacing: 0.15em !important;
           font-weight: 800 !important;
           border-left: 3px solid #e5e5e5;
           padding-left: 12px;
+          border-bottom: none !important;
+          text-transform: uppercase;
         }
 
-        /* On s'assure que le contenu ne paraisse pas grisé par erreur */
         .category-title-custom {
           opacity: 1 !important;
           filter: none !important;

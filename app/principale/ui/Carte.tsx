@@ -25,9 +25,14 @@ export default function Carte({
 
   useEffect(() => {
     if ("geolocation" in navigator) {
-      const watchId = navigator.geolocation.watchPosition((pos) => {
-        setUserCoords([pos.coords.longitude, pos.coords.latitude]);
-      });
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          setUserCoords([pos.coords.longitude, pos.coords.latitude]);
+        },
+        (err) => {
+          console.warn("Géolocalisation en arrière-plan ignorée :", err);
+        }
+      );
       return () => navigator.geolocation.clearWatch(watchId);
     }
   }, []);
