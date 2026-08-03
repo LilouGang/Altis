@@ -9,9 +9,7 @@ export default function PrincipalePage() {
   const { 
     viewState, setViewState, 
     popupInfo, setPopupInfo,
-    userStats,
     handleSelectSearchResult,
-    mesSommets,
     sommetsFiltres,
     filtres,
     handleAddSummitToProfile

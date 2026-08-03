@@ -9,9 +9,7 @@ export default function PrincipalePage() {
   const { 
     viewState, setViewState, 
     popupInfo, setPopupInfo,
-    userStats,
     handleSelectSearchResult,
-    mesSommets,
     sommetsFiltres,
     filtres,
     handleAddSummitToProfile
@@ -33,12 +31,10 @@ export default function PrincipalePage() {
         
         <QuickStats sommets={sommetsFiltres} />
         
-        <div className="absolute left-1/2 -translate-x-1/2 z-50">
-          <FiltresCarte 
-            filtres={filtres} 
-            totalAffiches={sommetsFiltres.length} 
-          />
-        </div>
+        <FiltresCarte 
+          filtres={filtres} 
+          totalAffiches={sommetsFiltres.length} 
+        />
 
         <FloatingSearch onSelectSommet={handleSelectSearchResult} />
 
