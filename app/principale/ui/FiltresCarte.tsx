@@ -14,8 +14,7 @@ interface FiltresCarteProps {
 
 export default function FiltresCarte({ filtres, totalAffiches }: FiltresCarteProps) {
   return (
-    // 📱 Sur mobile : Alignement à gauche avec scroll. Sur PC : Centré au milieu.
-    <div className="absolute top-20 left-2 md:left-1/2 md:-translate-x-1/2 z-10 flex items-center gap-2 bg-white/90 backdrop-blur-md p-1.5 md:p-2 rounded-2xl shadow-lg border border-neutral-200/50 animate-in slide-in-from-top-4 duration-500 overflow-x-auto max-w-[calc(100vw-110px)] md:max-w-[90vw] scrollbar-hide">
+    <div className="absolute top-20 left-3 md:left-1/2 md:-translate-x-1/2 z-10 flex items-center gap-2 bg-white/90 backdrop-blur-md p-1.5 md:p-2 rounded-2xl shadow-lg border border-neutral-200/50 animate-in slide-in-from-top-4 duration-500 overflow-x-auto max-w-[calc(100vw-130px)] md:max-w-[90vw] scrollbar-hide">
       
       <div className="hidden md:flex items-center justify-center w-8 h-8 rounded-xl bg-neutral-100 text-neutral-500 shrink-0 ml-1">
         <Filter size={16} strokeWidth={2.5} />

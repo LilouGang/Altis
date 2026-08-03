@@ -12,19 +12,16 @@ export default function Header() {
   const isActive = (path: string) => pathname === path;
 
   return (
-    // 📱 px-4 sur mobile, px-6 sur PC
     <header className="fixed top-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-b border-neutral-200 flex items-center justify-between px-4 md:px-6 z-50">
       
-      {/* 🏔️ Logo */}
-      <Link href="/" className="flex items-center gap-2 shrink-0 md:w-1/4 hover:opacity-80 transition-opacity">
+      <Link href="/" className="flex items-center gap-2 shrink-0 relative z-10 hover:opacity-80 transition-opacity">
         <div className="bg-emerald-600 p-1.5 rounded-lg text-white shadow-sm">
           <Mountain size={18} strokeWidth={2.5} />
         </div>
         <span className="font-black text-xl tracking-tight text-neutral-900">Altis.</span>
       </Link>
 
-      {/* 🧭 Navigation Centrale (Icônes sur mobile, Texte sur PC) */}
-      <nav className="flex items-center justify-center gap-6 md:gap-8 grow">
+      <nav className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-6 md:gap-8">
         <Link 
           href="/" 
           className={`flex items-center gap-2 text-sm font-bold transition-colors ${isActive('/') ? 'text-emerald-600' : 'text-neutral-400 hover:text-neutral-900'}`}
@@ -55,8 +52,7 @@ export default function Header() {
         </Link>
       </nav>
 
-      {/* 👤 Section Compte (Bouton Rond sur mobile, Bouton Normal sur PC) */}
-      <div className="flex items-center justify-end shrink-0 md:w-1/4">
+      <div className="flex items-center justify-end shrink-0 relative z-10">
         {!loading && (
           <Link 
             href="/compte" 

@@ -183,19 +183,22 @@ export default function FloatingSearch({ onSelectSommet }: FloatingSearchProps) 
         </div>
 
         <div className="relative group z-10">
-          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+          {/* 📱 pl-3 au lieu de pl-5, et icônes réduites à size={18} */}
+          <div className="absolute inset-y-0 left-0 pl-3 md:pl-4 flex items-center pointer-events-none">
             {isLoading ? (
-               <Loader2 size={20} className="text-emerald-500 animate-spin" />
+               <Loader2 size={18} className="text-emerald-500 animate-spin" />
             ) : (
-               <Search size={20} className="text-neutral-500 group-focus-within:text-emerald-600 transition-colors" />
+               <Search size={18} className="text-neutral-500 group-focus-within:text-emerald-600 transition-colors" />
             )}
           </div>
+          
           <input 
             type="text" 
             value={query}
             onChange={handleInputChange}
-            placeholder="Chercher n'importe quel sommet dans le monde..." 
-            className="w-full bg-white/90 backdrop-blur-md border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-full py-4 pl-14 pr-6 text-neutral-800 font-medium placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
+            placeholder="Chercher un sommet..." 
+            // 📱 py-3, pl-10 (gauche), pr-4 (droite), text-sm sur mobile
+            className="w-full bg-white/90 backdrop-blur-md border border-white/50 shadow-lg rounded-full py-3 md:py-4 pl-10 md:pl-12 pr-4 md:pr-6 text-sm md:text-base text-neutral-800 font-medium placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
           />
         </div>
 

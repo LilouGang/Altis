@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
@@ -17,10 +17,5 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 // Initialisation de l'Auth
 export const auth = getAuth(app);
 
-// Initialisation sécurisée hors-ligne pour Firestore
-// Firestore va automatiquement stocker les données lues et synchroniser les écritures dès que le réseau revient
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager()
-  })
-});
+// Initialisation standard de la base de données (100% en ligne, pas de cache)
+export const db = getFirestore(app);
