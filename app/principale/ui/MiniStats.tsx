@@ -46,8 +46,8 @@ export default function QuickStats({ sommets = [] }: QuickStatsProps) {
       className="absolute top-20 right-2 md:right-4 z-50 pointer-events-auto select-none cursor-pointer" 
       onClick={nextSlide}
     >
-      {/* 📱 Plus petit sur mobile (w-24 h-16), taille normale sur PC (w-36 h-24) */}
-      <div className="bg-white/80 backdrop-blur-md border border-neutral-200/50 shadow-sm rounded-2xl w-24 h-16 md:w-36 md:h-24 flex items-center justify-center relative overflow-hidden transition-colors hover:bg-white/95">
+      {/* 📱 w-28 sur mobile pour être identique au bouton filtre */}
+      <div className="bg-white/80 backdrop-blur-md border border-neutral-200/50 shadow-sm rounded-2xl w-28 h-16 md:w-36 md:h-24 flex items-center justify-center relative overflow-hidden transition-colors hover:bg-white/95">
         
         <div className="pb-2 md:pb-3">
           {slides[activeIndex]}

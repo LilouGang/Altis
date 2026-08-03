@@ -14,69 +14,67 @@ interface FiltresCarteProps {
 } 
 
 export default function FiltresCarte({ filtres, totalAffiches }: FiltresCarteProps) {   
-  // État pour ouvrir/fermer le menu sur mobile
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  
-  // Formatage propre pour l'affichage de l'altitude
   const altitudeLabel = filtres.altitude === 0 ? "Toutes" : `> ${filtres.altitude.toLocaleString('fr-FR')} m`;
 
-  // 🎨 Dictionnaire magique pour traduire les "hashtags" en noms de couleurs
+  // 🎨 Traduction des 12 couleurs de ta palette
   const getNomCouleur = (valeur: string) => {
     if (valeur === "Toutes" || !valeur) return "Toutes";
     const noms: Record<string, string> = {
-      "#10b981": "Vert",
-      "#3b82f6": "Bleu",
       "#ef4444": "Rouge",
-      "#f59e0b": "Orange",
+      "#f97316": "Orange",
+      "#f59e0b": "Ambre",
       "#eab308": "Jaune",
+      "#84cc16": "Vert clair",
+      "#22c55e": "Vert",
+      "#10b981": "Émeraude",
+      "#14b8a6": "Sarcelle",
+      "#06b6d4": "Cyan",
+      "#3b82f6": "Bleu",
       "#8b5cf6": "Violet",
-      "#ec4899": "Rose",
-      "#6b7280": "Gris"
+      "#d946ef": "Rose"
     };
-    return noms[valeur.toLowerCase()] || valeur; // Retourne le code hex d'origine s'il est inconnu
+    return noms[valeur.toLowerCase()] || valeur; 
   };
 
-  // Styles génériques pour nos 3 boîtes (pour ne pas répéter le code)
   const boxStyle = "relative flex flex-col justify-center bg-neutral-50/80 rounded-xl md:rounded-2xl px-4 md:px-5 py-2.5 md:py-0 h-[68px] md:h-full border border-neutral-100 shrink-0 hover:bg-neutral-100 transition-colors group overflow-hidden w-full md:min-w-[140px]";
 
   return (     
     <>
-      {/* 📱 BOUTON MOBILE UNIQUE (Aligné parfaitement avec les mini-stats) */}
-      <div className="absolute top-20 left-4 z-10 md:hidden">
+      {/* 📱 BOUTON MOBILE UNIQUE */}
+      <div className="absolute top-20 left-2 md:left-4 z-10 md:hidden">
+        {/* w-28 et justify-center pour matcher avec MiniStats */}
         <button 
           onClick={() => setIsMobileOpen(true)}
-          className="h-16 flex items-center gap-2.5 bg-white/90 backdrop-blur-md px-5 rounded-2xl shadow-sm border border-neutral-200/50 active:scale-95 transition-transform"
+          className="w-28 h-16 flex justify-center items-center gap-2 bg-white/90 backdrop-blur-md rounded-2xl shadow-sm border border-neutral-200/50 active:scale-95 transition-transform"
         >
-          <Filter size={18} className="text-emerald-600" strokeWidth={2.5} />
+          <Filter size={16} className="text-emerald-600" strokeWidth={2.5} />
           <span className="font-bold text-sm text-neutral-800">Filtres</span>
         </button>
       </div>
 
-      {/* 📱 OVERLAY NOIR POUR MOBILE (Ferme la modale si on clique à côté) */}
+      {/* 📱 OVERLAY NOIR POUR MOBILE (z-[60] pour recouvrir les MiniStats qui sont en z-50) */}
       {isMobileOpen && (
         <div 
-          className="fixed inset-0 bg-neutral-900/50 z-40 md:hidden backdrop-blur-sm animate-in fade-in duration-300"
+          className="fixed inset-0 bg-neutral-900/50 z-60 md:hidden backdrop-blur-sm animate-in fade-in duration-300"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
 
-      {/* 🧭 CONTENEUR PRINCIPAL (Modale au centre sur mobile, Barre en haut sur PC) */}
+      {/* 🧭 CONTENEUR PRINCIPAL (z-[70] sur mobile) */}
       <div className={`
-        absolute z-50 md:z-10
+        absolute z-70 md:z-10
         ${isMobileOpen ? 'flex' : 'hidden'} md:flex
         flex-col md:flex-row flex-nowrap items-stretch md:items-center gap-3 md:gap-3
         bg-white md:bg-white/90 md:backdrop-blur-md
         p-5 md:p-2.5
-        rounded-3xl md:rounded-[24px] shadow-2xl md:shadow-lg border border-neutral-200/50
+        rounded-3xl md:rounded-3xl shadow-2xl md:shadow-lg border border-neutral-200/50
         animate-in zoom-in-95 md:zoom-in-100 md:slide-in-from-top-4 duration-200
         
-        /* Positions Mobile : Modale centrée */
         top-1/2 left-4 right-4 -translate-y-1/2 md:translate-y-0
-        /* Positions PC : Barre centrée en haut */
         md:top-20 md:left-1/2 md:-translate-x-1/2 md:h-24 md:w-auto
       `}>              
         
-        {/* En-tête de la modale mobile */}
         <div className="flex md:hidden items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Filter size={18} className="text-emerald-600" />
@@ -87,12 +85,11 @@ export default function FiltresCarte({ filtres, totalAffiches }: FiltresCartePro
           </button>
         </div>
 
-        {/* Icône principale PC (cachée sur mobile) */}
         <div className="hidden md:flex flex-col items-center justify-center h-full aspect-square rounded-2xl bg-neutral-100 text-neutral-400 shrink-0">         
           <Filter size={20} strokeWidth={2.5} />       
         </div>       
         
-        {/* 1. BLOC ALTITUDE */}       
+        {/* BLOC ALTITUDE */}       
         <div className={boxStyle}>         
           <select            
             value={filtres.altitude}            
@@ -114,7 +111,7 @@ export default function FiltresCarte({ filtres, totalAffiches }: FiltresCartePro
           </div>
         </div>       
         
-        {/* 2. BLOC PAYS */}       
+        {/* BLOC PAYS */}       
         <div className={boxStyle}>         
           <select            
             value={filtres.pays}            
@@ -130,12 +127,12 @@ export default function FiltresCarte({ filtres, totalAffiches }: FiltresCartePro
             <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Pays</span>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-sm md:text-base font-black text-neutral-800 truncate max-w-[150px] md:max-w-[100px]">{filtres.pays}</span>
+            <span className="text-sm md:text-base font-black text-neutral-800 truncate max-w-37.5 md:max-w-25">{filtres.pays}</span>
             <ChevronDown size={14} className="text-neutral-400 group-hover:text-emerald-500 transition-colors" />
           </div>
         </div>       
         
-        {/* 3. BLOC COULEUR */}       
+        {/* BLOC COULEUR */}       
         <div className={boxStyle}>         
           <select            
             value={filtres.couleur}            
@@ -152,13 +149,11 @@ export default function FiltresCarte({ filtres, totalAffiches }: FiltresCartePro
             <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Couleur</span>
           </div>
           <div className="flex items-center justify-between gap-3">
-            {/* Ici on traduit l'affichage visuel ! */}
             <span className="text-sm md:text-base font-black text-neutral-800">{getNomCouleur(filtres.couleur)}</span>
             <ChevronDown size={14} className="text-neutral-400 group-hover:text-emerald-500 transition-colors" />
           </div>
         </div>       
         
-        {/* Compteur (Centré en bas sur mobile, Normal sur PC) */}
         <div className="flex flex-col items-center md:items-start justify-center pt-3 md:pt-0 pb-1 md:pb-0 md:px-4 shrink-0 border-t border-neutral-100 md:border-0 mt-1 md:mt-0">         
           <span className="text-2xl font-black text-emerald-600 md:text-neutral-800 leading-none">{totalAffiches}</span>
           <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mt-1">
@@ -166,7 +161,6 @@ export default function FiltresCarte({ filtres, totalAffiches }: FiltresCartePro
           </span>
         </div>     
 
-        {/* Bouton de validation sur mobile */}
         <button 
           onClick={() => setIsMobileOpen(false)}
           className="md:hidden mt-2 w-full bg-neutral-900 text-white font-bold py-3.5 rounded-xl active:scale-95 transition-transform"
